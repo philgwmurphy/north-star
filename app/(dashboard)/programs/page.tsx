@@ -134,7 +134,7 @@ export default function ProgramsPage() {
       </p>
 
       {/* Rep Max Calculator */}
-      <Card variant="gradient" className="mb-8">
+      <Card variant="elevated" className="mb-8">
         <CardContent className="pt-6">
           <div className="flex items-center gap-3 mb-6">
             <h2 className="font-[family-name:var(--font-bebas-neue)] text-2xl tracking-wide">
@@ -212,7 +212,7 @@ export default function ProgramsPage() {
         {getAllPrograms().map(([key, program]) => (
           <Card
             key={key}
-            variant={selectedProgram === key ? "gradient" : "interactive"}
+            variant={selectedProgram === key ? "elevated" : "interactive"}
             className={`cursor-pointer transition-all ${
               selectedProgram === key ? "ring-2 ring-[var(--accent-primary)]" : ""
             }`}
