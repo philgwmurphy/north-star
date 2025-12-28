@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // directUrl = env("DIRECT_URL") // Only needed if using a connection pooler
+}
+
+// User profile synced with Clerk
+model User {
+  id              String   @id // Clerk user ID
+  email           String   @unique
+  name            String?
+  imageUrl        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Fitness data
+  repMaxes        RepMax[]
+  workouts        Workout[]
+  selectedProgram String?
+  currentWeek     Int       @default(1)
+  settings        UserSettings?
+}
+
+model RepMax {
+  id        String   @id @default(cuid())
+  userId    String
+  exercise  String   // squat, bench, deadlift, ohp
+  weight    Float
+  reps      Int
+  oneRM     Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, exercise])
+  @@index([userId])
+}
+
+model Workout {
+  id          String    @id @default(cuid())
+  userId      String
+  programKey  String?
+  programDay  String?
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  notes       String?
+
+  sets WorkoutSet[]
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([startedAt])
+}
+
+model WorkoutSet {
+  id          String   @id @default(cuid())
+  workoutId   String
+  exercise    String
+  weight      Float
+  reps        Int
+  setNumber   Int
+  rpe         Int?
+  isWarmup    Boolean  @default(false)
+  completedAt DateTime @default(now())
+
+  workout Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+
+  @@index([workoutId])
+}
+
+model UserSettings {
+  id               String  @id @default(cuid())
+  userId           String  @unique
+  weightUnit       String  @default("lbs") // lbs or kg
+  restTimerDefault Int     @default(180)   // seconds
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
