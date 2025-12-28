@@ -150,7 +150,7 @@ export default function ProgramsPage() {
             {LIFTS.map((lift) => (
               <div
                 key={lift.key}
-                className="bg-[var(--bg-pure-black)] border border-[var(--border-subtle)] rounded-xl p-4"
+                className="bg-[var(--bg-pure-black)] border border-[var(--border-subtle)] p-4"
               >
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 bg-[var(--bg-elevated)] flex items-center justify-center font-[family-name:var(--font-geist-mono)] text-sm font-bold text-[var(--text-muted)]">
@@ -169,7 +169,7 @@ export default function ProgramsPage() {
                       value={repMaxes[lift.key].weight}
                       onChange={(e) => handleInputChange(lift.key, "weight", e.target.value)}
                       placeholder={lift.placeholder}
-                      className="w-full px-3 py-2 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg text-[var(--text-primary)] font-[family-name:var(--font-geist-mono)] focus:border-[var(--accent-primary)] focus:outline-none transition-colors"
+                      className="w-full px-3 py-2 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none transition-colors"
                     />
                   </div>
                   <div className="w-20">
@@ -181,12 +181,12 @@ export default function ProgramsPage() {
                       value={repMaxes[lift.key].reps}
                       onChange={(e) => handleInputChange(lift.key, "reps", e.target.value)}
                       placeholder="5"
-                      className="w-full px-3 py-2 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg text-[var(--text-primary)] font-[family-name:var(--font-geist-mono)] focus:border-[var(--accent-primary)] focus:outline-none transition-colors"
+                      className="w-full px-3 py-2 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none transition-colors"
                     />
                   </div>
                 </div>
 
-                <div className="bg-[var(--bg-surface)] rounded-lg p-3 text-center">
+                <div className="bg-[var(--bg-surface)] p-3 text-center">
                   <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">
                     Est. 1RM
                   </div>

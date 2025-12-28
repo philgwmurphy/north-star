@@ -22,16 +22,16 @@ export function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] rounded-xl flex items-center justify-center">
-              <span className="text-xl">*</span>
+            <div className="w-10 h-10 bg-white flex items-center justify-center">
+              <span className="text-xl text-black font-bold">*</span>
             </div>
-            <span className="font-[family-name:var(--font-bebas-neue)] text-2xl tracking-widest gradient-text hidden sm:block">
+            <span className="font-[family-name:var(--font-bebas-neue)] text-2xl tracking-widest hidden sm:block">
               NORTH STAR
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1 bg-[var(--bg-surface)] p-1 rounded-2xl border border-[var(--border-subtle)]">
+          <nav className="hidden md:flex items-center gap-1 bg-[var(--bg-surface)] p-1 border border-[var(--border-subtle)]">
             {navItems.map((item) => {
               const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
               return (
@@ -39,9 +39,9 @@ export function Header() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "px-4 py-2 rounded-xl text-sm font-semibold transition-all",
+                    "px-4 py-2 text-sm font-semibold transition-all",
                     isActive
-                      ? "bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] text-white"
+                      ? "bg-white text-black"
                       : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
                   )}
                 >

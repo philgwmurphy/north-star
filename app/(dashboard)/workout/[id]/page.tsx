@@ -322,27 +322,29 @@ export default function ActiveWorkoutPage() {
                     return (
                       <div
                         key={setIdx}
-                        className={`flex items-center gap-4 px-4 py-3 ${isCompleted ? 'bg-[var(--bg-elevated)]' : ''}`}
+                        className={`px-4 py-3 ${isCompleted ? 'bg-[var(--bg-elevated)]' : ''}`}
                       >
-                        <span className="text-[var(--text-muted)] w-16 text-sm">Set {setIdx + 1}</span>
-
                         {isCompleted ? (
-                          <>
+                          <div className="flex items-center gap-4">
+                            <span className="text-[var(--text-muted)] w-12 text-sm shrink-0">Set {setIdx + 1}</span>
                             <span className="font-[family-name:var(--font-geist-mono)] text-[var(--accent-success)] flex-1">
                               {completedSet.weight} x {completedSet.reps}
                             </span>
                             <Check className="w-5 h-5 text-[var(--accent-success)]" />
-                          </>
+                          </div>
                         ) : (
-                          <>
-                            <span className="text-[var(--text-muted)] text-sm">
-                              Target: {targetSet.weight} x {targetSet.reps}
-                            </span>
-                            <div className="flex items-center gap-2 ml-auto">
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[var(--text-muted)] text-sm">Set {setIdx + 1}</span>
+                              <span className="text-[var(--text-muted)] text-sm">
+                                Target: {targetSet.weight} x {targetSet.reps}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
                               <input
                                 type="number"
                                 placeholder={String(targetSet.weight)}
-                                className="w-20 px-2 py-1.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] text-sm focus:border-white focus:outline-none"
+                                className="flex-1 min-w-0 px-2 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] text-sm focus:border-white focus:outline-none"
                                 value={form.weight || ""}
                                 onChange={(e) => handleInlineChange(formKey, "weight", e.target.value)}
                               />
@@ -350,7 +352,7 @@ export default function ActiveWorkoutPage() {
                               <input
                                 type="number"
                                 placeholder={String(targetSet.reps).replace('+', '')}
-                                className="w-16 px-2 py-1.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] text-sm focus:border-white focus:outline-none"
+                                className="w-16 shrink-0 px-2 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] text-sm focus:border-white focus:outline-none"
                                 value={form.reps || ""}
                                 onChange={(e) => handleInlineChange(formKey, "reps", e.target.value)}
                               />
@@ -362,7 +364,7 @@ export default function ActiveWorkoutPage() {
                                 Log
                               </Button>
                             </div>
-                          </>
+                          </div>
                         )}
                       </div>
                     );
@@ -386,17 +388,17 @@ export default function ActiveWorkoutPage() {
           </div>
 
           {showCustomForm && (
-            <div className="px-4 py-4">
-              <div className="flex flex-wrap items-center gap-3">
-                <ExerciseAutocomplete
-                  value={customExercise.name}
-                  onChange={(name) => setCustomExercise(prev => ({ ...prev, name }))}
-                  placeholder="Search exercises..."
-                />
+            <div className="px-4 py-4 space-y-3">
+              <ExerciseAutocomplete
+                value={customExercise.name}
+                onChange={(name) => setCustomExercise(prev => ({ ...prev, name }))}
+                placeholder="Search exercises..."
+              />
+              <div className="flex items-center gap-2">
                 <input
                   type="number"
                   placeholder="Weight"
-                  className="w-24 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                  className="flex-1 min-w-0 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                   value={customExercise.weight}
                   onChange={(e) => setCustomExercise(prev => ({ ...prev, weight: e.target.value }))}
                 />
@@ -404,11 +406,14 @@ export default function ActiveWorkoutPage() {
                 <input
                   type="number"
                   placeholder="Reps"
-                  className="w-20 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                  className="w-20 shrink-0 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                   value={customExercise.reps}
                   onChange={(e) => setCustomExercise(prev => ({ ...prev, reps: e.target.value }))}
                 />
+              </div>
+              <div className="flex gap-2">
                 <Button
+                  className="flex-1"
                   onClick={handleLogCustomSet}
                   loading={savingSet === "custom"}
                   disabled={!customExercise.name || !customExercise.weight || !customExercise.reps}
