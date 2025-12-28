@@ -2,13 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Modal } from "@/components/ui/modal";
-import { programs, type RepMaxes } from "@/lib/programs";
+import { programs, type RepMaxes, type WorkoutSet as ProgramSet } from "@/lib/programs";
 import { formatDuration } from "@/lib/utils";
-import { Check, Plus, Clock } from "lucide-react";
+import { Check, Clock, Plus } from "lucide-react";
 
 interface WorkoutSet {
   id: string;
@@ -35,6 +32,11 @@ interface UserData {
   repMaxes: { exercise: string; oneRM: number }[];
 }
 
+interface InlineFormState {
+  weight: string;
+  reps: string;
+}
+
 export default function ActiveWorkoutPage() {
   const router = useRouter();
   const params = useParams();
@@ -43,15 +45,15 @@ export default function ActiveWorkoutPage() {
   const [workout, setWorkout] = useState<Workout | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showLogModal, setShowLogModal] = useState(false);
-  const [selectedExercise, setSelectedExercise] = useState("");
-  const [logForm, setLogForm] = useState({
-    weight: "",
-    reps: "",
-    rpe: "",
-  });
-  const [saving, setSaving] = useState(false);
   const [elapsedTime, setElapsedTime] = useState("");
+  const [savingSet, setSavingSet] = useState<string | null>(null);
+
+  // Track inline form state per exercise/set
+  const [inlineForms, setInlineForms] = useState<Record<string, InlineFormState>>({});
+
+  // Custom exercise form
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [customExercise, setCustomExercise] = useState({ name: "", weight: "", reps: "" });
 
   // Fetch workout and user data
   useEffect(() => {
@@ -96,44 +98,84 @@ export default function ActiveWorkoutPage() {
     return () => clearInterval(interval);
   }, [workout]);
 
-  const openLogModal = (exercise: string) => {
-    setSelectedExercise(exercise);
-    setLogForm({ weight: "", reps: "", rpe: "" });
-    setShowLogModal(true);
+  const getFormKey = (exerciseName: string, setIndex: number) => `${exerciseName}-${setIndex}`;
+
+  const handleInlineChange = (key: string, field: "weight" | "reps", value: string) => {
+    setInlineForms(prev => ({
+      ...prev,
+      [key]: { ...prev[key], [field]: value }
+    }));
   };
 
-  const handleLogSet = async () => {
-    if (!logForm.weight || !logForm.reps) return;
+  const handleLogSet = async (exerciseName: string, setIndex: number, targetWeight: number | string, targetReps: number | string) => {
+    const formKey = getFormKey(exerciseName, setIndex);
+    const form = inlineForms[formKey] || {};
 
-    setSaving(true);
+    const weight = form.weight || String(targetWeight);
+    const reps = form.reps || String(targetReps).replace('+', '');
+
+    if (!weight || !reps) return;
+
+    setSavingSet(formKey);
     try {
-      const existingSets = workout?.sets.filter(
-        (s) => s.exercise === selectedExercise
-      ).length || 0;
+      const existingSets = workout?.sets.filter(s => s.exercise === exerciseName).length || 0;
 
       const response = await fetch(`/api/workouts/${workoutId}/sets`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          exercise: selectedExercise,
-          weight: parseFloat(logForm.weight),
-          reps: parseInt(logForm.reps),
+          exercise: exerciseName,
+          weight: parseFloat(weight),
+          reps: parseInt(reps),
           setNumber: existingSets + 1,
-          rpe: logForm.rpe ? parseInt(logForm.rpe) : undefined,
         }),
       });
 
       if (response.ok) {
         const newSet = await response.json();
-        setWorkout((prev) =>
-          prev ? { ...prev, sets: [...prev.sets, newSet] } : prev
-        );
-        setShowLogModal(false);
+        setWorkout(prev => prev ? { ...prev, sets: [...prev.sets, newSet] } : prev);
+        // Clear the form
+        setInlineForms(prev => {
+          const updated = { ...prev };
+          delete updated[formKey];
+          return updated;
+        });
       }
     } catch (error) {
       console.error("Failed to log set:", error);
     } finally {
-      setSaving(false);
+      setSavingSet(null);
+    }
+  };
+
+  const handleLogCustomSet = async () => {
+    if (!customExercise.name || !customExercise.weight || !customExercise.reps) return;
+
+    setSavingSet("custom");
+    try {
+      const existingSets = workout?.sets.filter(s => s.exercise === customExercise.name).length || 0;
+
+      const response = await fetch(`/api/workouts/${workoutId}/sets`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          exercise: customExercise.name,
+          weight: parseFloat(customExercise.weight),
+          reps: parseInt(customExercise.reps),
+          setNumber: existingSets + 1,
+        }),
+      });
+
+      if (response.ok) {
+        const newSet = await response.json();
+        setWorkout(prev => prev ? { ...prev, sets: [...prev.sets, newSet] } : prev);
+        setCustomExercise({ name: "", weight: "", reps: "" });
+        setShowCustomForm(false);
+      }
+    } catch (error) {
+      console.error("Failed to log set:", error);
+    } finally {
+      setSavingSet(null);
     }
   };
 
@@ -155,7 +197,7 @@ export default function ActiveWorkoutPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="w-8 h-8 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-white border-t-transparent animate-spin" />
       </div>
     );
   }
@@ -187,161 +229,219 @@ export default function ActiveWorkoutPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-8 pb-6 border-b border-[var(--border-subtle)]">
         <div>
           <h1 className="font-[family-name:var(--font-bebas-neue)] text-3xl tracking-wide">
             {workout.programDay || "CUSTOM WORKOUT"}
           </h1>
-          <div className="flex items-center gap-4 text-[var(--text-muted)]">
+          <div className="flex items-center gap-4 text-[var(--text-muted)] text-sm mt-1">
             <span className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
               {elapsedTime}
             </span>
-            <span>{workout.sets.length} sets completed</span>
+            <span>{workout.sets.length} sets logged</span>
           </div>
         </div>
-        <Button onClick={handleFinishWorkout} variant="secondary">
+        <Button onClick={handleFinishWorkout}>
           <Check className="w-4 h-4 mr-2" />
-          Finish
+          Finish Workout
         </Button>
       </div>
 
-      {/* Exercise Cards */}
-      <div className="space-y-4">
-        {programExercises.map((exercise, idx) => {
+      {/* Exercises */}
+      <div className="space-y-8">
+        {programExercises.map((exercise, exIdx) => {
           const completedSets = setsByExercise[exercise.name] || [];
-          const targetSets = Array.isArray(exercise.sets)
-            ? exercise.sets.length
-            : 3;
+          const targetSets: ProgramSet[] = Array.isArray(exercise.sets)
+            ? exercise.sets
+            : [];
+          const isStringFormat = typeof exercise.sets === "string";
 
           return (
-            <Card key={idx}>
-              <CardContent className="py-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="font-bold text-lg">{exercise.name}</h3>
-                    <div className="text-sm text-[var(--text-muted)]">
-                      {Array.isArray(exercise.sets) ? (
-                        exercise.sets.map((s, i) => (
-                          <span key={i} className="mr-2">
-                            {s.weight}lbs x {s.reps}
-                          </span>
-                        ))
-                      ) : (
-                        <span>{exercise.sets}</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-sm text-[var(--text-muted)]">
-                    {completedSets.length}/{targetSets} sets
-                  </div>
-                </div>
+            <div key={exIdx} className="border border-[var(--border-subtle)]">
+              {/* Exercise Header */}
+              <div className="bg-[var(--bg-surface)] px-4 py-3 border-b border-[var(--border-subtle)]">
+                <h3 className="font-bold text-lg">{exercise.name}</h3>
+                {isStringFormat && (
+                  <p className="text-sm text-[var(--text-muted)]">{exercise.sets}</p>
+                )}
+              </div>
 
-                {/* Completed sets */}
-                {completedSets.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {completedSets.map((set) => (
-                      <div
-                        key={set.id}
-                        className="bg-[var(--bg-elevated)] text-[var(--accent-success)] border border-[var(--accent-success)] px-3 py-1 text-sm font-[family-name:var(--font-geist-mono)]"
-                      >
-                        {set.weight}lbs x {set.reps}
-                        {set.rpe && <span className="ml-1 opacity-70">@{set.rpe}</span>}
+              {/* Sets List */}
+              <div className="divide-y divide-[var(--border-subtle)]">
+                {isStringFormat ? (
+                  // For exercises with string format (e.g., "3x10"), show completed sets + add button
+                  <>
+                    {completedSets.map((set, idx) => (
+                      <div key={set.id} className="flex items-center justify-between px-4 py-3 bg-[var(--bg-elevated)]">
+                        <span className="text-[var(--text-muted)] w-16">Set {idx + 1}</span>
+                        <span className="font-[family-name:var(--font-geist-mono)] text-[var(--accent-success)]">
+                          {set.weight} x {set.reps}
+                        </span>
+                        <Check className="w-5 h-5 text-[var(--accent-success)]" />
                       </div>
                     ))}
-                  </div>
-                )}
+                    <div className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <span className="text-[var(--text-muted)] w-16">Set {completedSets.length + 1}</span>
+                        <input
+                          type="number"
+                          placeholder="Weight"
+                          className="w-24 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                          value={inlineForms[getFormKey(exercise.name, completedSets.length)]?.weight || ""}
+                          onChange={(e) => handleInlineChange(getFormKey(exercise.name, completedSets.length), "weight", e.target.value)}
+                        />
+                        <span className="text-[var(--text-muted)]">x</span>
+                        <input
+                          type="number"
+                          placeholder="Reps"
+                          className="w-20 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                          value={inlineForms[getFormKey(exercise.name, completedSets.length)]?.reps || ""}
+                          onChange={(e) => handleInlineChange(getFormKey(exercise.name, completedSets.length), "reps", e.target.value)}
+                        />
+                        <Button
+                          size="sm"
+                          onClick={() => handleLogSet(exercise.name, completedSets.length, "", "")}
+                          loading={savingSet === getFormKey(exercise.name, completedSets.length)}
+                          disabled={!inlineForms[getFormKey(exercise.name, completedSets.length)]?.weight || !inlineForms[getFormKey(exercise.name, completedSets.length)]?.reps}
+                        >
+                          Log
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  // For exercises with specific sets, show each target set
+                  targetSets.map((targetSet, setIdx) => {
+                    const isCompleted = setIdx < completedSets.length;
+                    const completedSet = completedSets[setIdx];
+                    const formKey = getFormKey(exercise.name, setIdx);
+                    const form = inlineForms[formKey] || {};
 
-                <Button
-                  onClick={() => openLogModal(exercise.name)}
-                  variant="secondary"
-                  className="w-full"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Log Set
-                </Button>
-              </CardContent>
-            </Card>
+                    return (
+                      <div
+                        key={setIdx}
+                        className={`flex items-center gap-4 px-4 py-3 ${isCompleted ? 'bg-[var(--bg-elevated)]' : ''}`}
+                      >
+                        <span className="text-[var(--text-muted)] w-16 text-sm">Set {setIdx + 1}</span>
+
+                        {isCompleted ? (
+                          <>
+                            <span className="font-[family-name:var(--font-geist-mono)] text-[var(--accent-success)] flex-1">
+                              {completedSet.weight} x {completedSet.reps}
+                            </span>
+                            <Check className="w-5 h-5 text-[var(--accent-success)]" />
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-[var(--text-muted)] text-sm">
+                              Target: {targetSet.weight} x {targetSet.reps}
+                            </span>
+                            <div className="flex items-center gap-2 ml-auto">
+                              <input
+                                type="number"
+                                placeholder={String(targetSet.weight)}
+                                className="w-20 px-2 py-1.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] text-sm focus:border-white focus:outline-none"
+                                value={form.weight || ""}
+                                onChange={(e) => handleInlineChange(formKey, "weight", e.target.value)}
+                              />
+                              <span className="text-[var(--text-muted)]">x</span>
+                              <input
+                                type="number"
+                                placeholder={String(targetSet.reps).replace('+', '')}
+                                className="w-16 px-2 py-1.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] text-sm focus:border-white focus:outline-none"
+                                value={form.reps || ""}
+                                onChange={(e) => handleInlineChange(formKey, "reps", e.target.value)}
+                              />
+                              <Button
+                                size="sm"
+                                onClick={() => handleLogSet(exercise.name, setIdx, targetSet.weight, targetSet.reps)}
+                                loading={savingSet === formKey}
+                              >
+                                Log
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
           );
         })}
 
-        {/* Custom exercise button */}
-        <Button
-          onClick={() => openLogModal("")}
-          variant="outline"
-          className="w-full"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Custom Exercise
-        </Button>
-      </div>
-
-      {/* Log Set Modal */}
-      <Modal
-        isOpen={showLogModal}
-        onClose={() => setShowLogModal(false)}
-        title="LOG SET"
-      >
-        <div className="space-y-4">
-          {!selectedExercise && (
-            <Input
-              label="Exercise"
-              value={selectedExercise}
-              onChange={(e) => setSelectedExercise(e.target.value)}
-              placeholder="Exercise name"
-            />
-          )}
-          {selectedExercise && (
-            <div className="text-lg font-bold mb-4">{selectedExercise}</div>
-          )}
-
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Weight (lbs)"
-              type="number"
-              value={logForm.weight}
-              onChange={(e) =>
-                setLogForm((prev) => ({ ...prev, weight: e.target.value }))
-              }
-              placeholder="225"
-            />
-            <Input
-              label="Reps"
-              type="number"
-              value={logForm.reps}
-              onChange={(e) =>
-                setLogForm((prev) => ({ ...prev, reps: e.target.value }))
-              }
-              placeholder="5"
-            />
+        {/* Custom Exercise Section */}
+        <div className="border border-[var(--border-subtle)]">
+          <div className="bg-[var(--bg-surface)] px-4 py-3 border-b border-[var(--border-subtle)] flex items-center justify-between">
+            <h3 className="font-bold">Custom Exercise</h3>
+            {!showCustomForm && (
+              <Button size="sm" variant="outline" onClick={() => setShowCustomForm(true)}>
+                <Plus className="w-4 h-4 mr-1" />
+                Add
+              </Button>
+            )}
           </div>
 
-          <Input
-            label="RPE (optional)"
-            type="number"
-            min="1"
-            max="10"
-            value={logForm.rpe}
-            onChange={(e) =>
-              setLogForm((prev) => ({ ...prev, rpe: e.target.value }))
-            }
-            placeholder="8"
-          />
+          {showCustomForm && (
+            <div className="px-4 py-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <input
+                  type="text"
+                  placeholder="Exercise name"
+                  className="flex-1 min-w-[150px] px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] focus:border-white focus:outline-none"
+                  value={customExercise.name}
+                  onChange={(e) => setCustomExercise(prev => ({ ...prev, name: e.target.value }))}
+                />
+                <input
+                  type="number"
+                  placeholder="Weight"
+                  className="w-24 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                  value={customExercise.weight}
+                  onChange={(e) => setCustomExercise(prev => ({ ...prev, weight: e.target.value }))}
+                />
+                <span className="text-[var(--text-muted)]">x</span>
+                <input
+                  type="number"
+                  placeholder="Reps"
+                  className="w-20 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                  value={customExercise.reps}
+                  onChange={(e) => setCustomExercise(prev => ({ ...prev, reps: e.target.value }))}
+                />
+                <Button
+                  onClick={handleLogCustomSet}
+                  loading={savingSet === "custom"}
+                  disabled={!customExercise.name || !customExercise.weight || !customExercise.reps}
+                >
+                  Log Set
+                </Button>
+                <Button variant="ghost" onClick={() => setShowCustomForm(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
 
-          <div className="flex gap-3 pt-4">
-            <Button
-              onClick={() => setShowLogModal(false)}
-              variant="secondary"
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleLogSet} loading={saving} className="flex-1">
-              Save Set
-            </Button>
-          </div>
+          {/* Show logged custom exercises */}
+          {Object.entries(setsByExercise)
+            .filter(([name]) => !programExercises.some(e => e.name === name))
+            .map(([exerciseName, sets]) => (
+              <div key={exerciseName} className="border-t border-[var(--border-subtle)]">
+                <div className="px-4 py-2 text-sm text-[var(--text-muted)]">{exerciseName}</div>
+                {sets.map((set, idx) => (
+                  <div key={set.id} className="flex items-center justify-between px-4 py-2 bg-[var(--bg-elevated)]">
+                    <span className="text-[var(--text-muted)] w-16">Set {idx + 1}</span>
+                    <span className="font-[family-name:var(--font-geist-mono)] text-[var(--accent-success)]">
+                      {set.weight} x {set.reps}
+                    </span>
+                    <Check className="w-5 h-5 text-[var(--accent-success)]" />
+                  </div>
+                ))}
+              </div>
+            ))}
         </div>
-      </Modal>
+      </div>
     </div>
   );
 }
