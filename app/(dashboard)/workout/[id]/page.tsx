@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { programs, type RepMaxes, type WorkoutSet as ProgramSet } from "@/lib/programs";
 import { formatDuration } from "@/lib/utils";
 import { Check, Clock, Plus } from "lucide-react";
+import { ExerciseAutocomplete } from "@/components/ui/exercise-autocomplete";
 
 interface WorkoutSet {
   id: string;
@@ -262,7 +263,7 @@ export default function ActiveWorkoutPage() {
               {/* Exercise Header */}
               <div className="bg-[var(--bg-surface)] px-4 py-3 border-b border-[var(--border-subtle)]">
                 <h3 className="font-bold text-lg">{exercise.name}</h3>
-                {isStringFormat && (
+                {isStringFormat && typeof exercise.sets === "string" && (
                   <p className="text-sm text-[var(--text-muted)]">{exercise.sets}</p>
                 )}
               </div>
@@ -387,12 +388,10 @@ export default function ActiveWorkoutPage() {
           {showCustomForm && (
             <div className="px-4 py-4">
               <div className="flex flex-wrap items-center gap-3">
-                <input
-                  type="text"
-                  placeholder="Exercise name"
-                  className="flex-1 min-w-[150px] px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] focus:border-white focus:outline-none"
+                <ExerciseAutocomplete
                   value={customExercise.name}
-                  onChange={(e) => setCustomExercise(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(name) => setCustomExercise(prev => ({ ...prev, name }))}
+                  placeholder="Search exercises..."
                 />
                 <input
                   type="number"
