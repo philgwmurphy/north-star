@@ -107,7 +107,7 @@ export default async function WorkoutPage() {
                 <Badge variant="default">{workout.focus}</Badge>
               </div>
               <form action="/api/workouts" method="POST">
-                <input type="hidden" name="programKey" value={user.selectedProgram} />
+                <input type="hidden" name="programKey" value={user.selectedProgram || ""} />
                 <input type="hidden" name="programDay" value={workout.day} />
                 <Button size="sm" variant="outline">
                   <Play className="w-3 h-3 mr-2" />
