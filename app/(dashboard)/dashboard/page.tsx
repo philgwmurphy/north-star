@@ -85,9 +85,17 @@ export default async function HomePage() {
                 <p className="text-white font-semibold text-xs uppercase tracking-wider mb-1">
                   WORKOUT IN PROGRESS
                 </p>
-                <h2 className="font-[family-name:var(--font-bebas-neue)] text-2xl tracking-wide mb-2">
-                  {activeWorkout.programDay || "Custom Workout"}
+                <h2 className="font-[family-name:var(--font-bebas-neue)] text-2xl tracking-wide mb-1">
+                  {activeWorkout.programKey ? programs[activeWorkout.programKey]?.name : "Custom Workout"}
                 </h2>
+                {activeWorkout.programKey && (
+                  <p className="text-[var(--text-muted)] text-sm mb-2">
+                    {programs[activeWorkout.programKey]?.hasWeeks && user?.currentWeek && (
+                      <>Week {user.currentWeek} &bull; </>
+                    )}
+                    {activeWorkout.programDay}
+                  </p>
+                )}
                 <p className="text-[var(--text-muted)] text-sm">
                   {activeWorkout.sets.length} sets completed &bull; {formatDuration(activeWorkout.startedAt)}
                 </p>
