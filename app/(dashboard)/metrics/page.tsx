@@ -1,22 +1,10 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import dynamic from "next/dynamic";
 import { prisma } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatCard } from "@/components/workout/stat-card";
 import { formatLargeNumber } from "@/lib/utils";
-
-const BodyWeightChart = dynamic(
-  () => import("@/components/body-weight/trend-chart").then((mod) => mod.BodyWeightChart),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-64 bg-[var(--bg-surface)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--text-muted)]">
-        Loading chart...
-      </div>
-    ),
-  }
-);
+import { BodyWeightChartSection } from "@/components/body-weight/body-weight-chart-section";
 
 async function getMetrics(userId: string) {
   const [sets, workoutCount, repMaxes, bodyWeights] = await Promise.all([
@@ -165,7 +153,7 @@ export default async function MetricsPage() {
       {bodyWeights.length > 0 && (
         <section className="mb-8">
           <h2 className="text-xl font-bold mb-4">Body Weight</h2>
-          <BodyWeightChart
+          <BodyWeightChartSection
             entries={bodyWeights.map(bw => ({
               id: bw.id,
               weight: bw.weight,
