@@ -39,7 +39,9 @@ export default async function WorkoutPage() {
     return acc;
   }, {} as RepMaxes);
 
-  const program = programs[user.selectedProgram];
+  // We've already verified selectedProgram exists via hasProgram check above
+  const selectedProgram = user.selectedProgram!;
+  const program = programs[selectedProgram];
   const workouts = program.getWorkouts(repMaxes, user.currentWeek);
 
   const trainingMaxes = program.usesTrainingMax
@@ -56,7 +58,7 @@ export default async function WorkoutPage() {
       hasProgram={hasProgram}
       hasRepMaxes={hasRepMaxes}
       programName={program.name}
-      programKey={user.selectedProgram}
+      programKey={selectedProgram}
       usesTrainingMax={program.usesTrainingMax}
       hasWeeks={program.hasWeeks}
       totalWeeks={program.totalWeeks}
