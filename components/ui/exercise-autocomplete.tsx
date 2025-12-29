@@ -8,12 +8,14 @@ interface ExerciseAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  searchFn?: (query: string) => Exercise[];
 }
 
 export function ExerciseAutocomplete({
   value,
   onChange,
   placeholder = "Search exercises...",
+  searchFn = searchExercises,
 }: ExerciseAutocompleteProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [results, setResults] = useState<Exercise[]>([]);
@@ -22,10 +24,10 @@ export function ExerciseAutocomplete({
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const newResults = searchExercises(value);
+    const newResults = searchFn(value);
     setResults(newResults);
     setHighlightedIndex(0);
-  }, [value]);
+  }, [value, searchFn]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value);

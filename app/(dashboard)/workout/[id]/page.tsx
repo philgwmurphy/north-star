@@ -7,6 +7,7 @@ import { programs, type RepMaxes, type WorkoutSet as ProgramSet } from "@/lib/pr
 import { formatDuration, formatDurationSeconds } from "@/lib/utils";
 import { Check, Clock, Plus, Trash2, Pencil, X } from "lucide-react";
 import { ExerciseAutocomplete } from "@/components/ui/exercise-autocomplete";
+import { searchCardioExercises } from "@/lib/exercises";
 
 interface WorkoutSet {
   id: string;
@@ -592,6 +593,7 @@ export default function ActiveWorkoutPage() {
               value={cardioEntry.name}
               onChange={(name) => setCardioEntry(prev => ({ ...prev, name }))}
               placeholder="Search cardio exercise..."
+              searchFn={searchCardioExercises}
             />
             <div className="flex items-center gap-2">
               <input

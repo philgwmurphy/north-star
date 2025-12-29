@@ -268,6 +268,29 @@ export const exercises: Exercise[] = [
   { name: "Ski Erg", category: "Conditioning" },
 ];
 
+export const cardioExercises: Exercise[] = [
+  { name: "Running (Treadmill)", category: "Cardio" },
+  { name: "Running (Outdoor)", category: "Cardio" },
+  { name: "Walking", category: "Cardio" },
+  { name: "Incline Walk", category: "Cardio" },
+  { name: "Cycling (Stationary Bike)", category: "Cardio" },
+  { name: "Cycling (Outdoor)", category: "Cardio" },
+  { name: "Air Bike", category: "Cardio" },
+  { name: "Rowing Machine", category: "Cardio" },
+  { name: "Ski Erg", category: "Cardio" },
+  { name: "Elliptical", category: "Cardio" },
+  { name: "Stair Climber", category: "Cardio" },
+  { name: "Swimming", category: "Cardio" },
+  { name: "Jump Rope", category: "Cardio" },
+  { name: "Hiking", category: "Cardio" },
+  { name: "Rucking", category: "Cardio" },
+  { name: "Boxing (Bag)", category: "Cardio" },
+  { name: "Shadow Boxing", category: "Cardio" },
+  { name: "Assault Bike", category: "Cardio" },
+  { name: "Sled Push", category: "Cardio" },
+  { name: "Sled Pull", category: "Cardio" },
+];
+
 // Get unique exercise names for autocomplete
 export const exerciseNames = exercises.map(e => e.name);
 
@@ -283,6 +306,28 @@ export function searchExercises(query: string): Exercise[] {
   const contains: Exercise[] = [];
 
   for (const exercise of exercises) {
+    const lowerName = exercise.name.toLowerCase();
+    if (lowerName === lowerQuery) {
+      exact.push(exercise);
+    } else if (lowerName.startsWith(lowerQuery)) {
+      startsWith.push(exercise);
+    } else if (lowerName.includes(lowerQuery)) {
+      contains.push(exercise);
+    }
+  }
+
+  return [...exact, ...startsWith, ...contains].slice(0, 10);
+}
+
+export function searchCardioExercises(query: string): Exercise[] {
+  if (!query.trim()) return cardioExercises.slice(0, 10);
+
+  const lowerQuery = query.toLowerCase();
+  const exact: Exercise[] = [];
+  const startsWith: Exercise[] = [];
+  const contains: Exercise[] = [];
+
+  for (const exercise of cardioExercises) {
     const lowerName = exercise.name.toLowerCase();
     if (lowerName === lowerQuery) {
       exact.push(exercise);
