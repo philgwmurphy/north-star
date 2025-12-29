@@ -61,7 +61,12 @@ export default function ActiveWorkoutPage() {
 
   // Edit mode for logged sets
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
+  const [editingSetIsCardio, setEditingSetIsCardio] = useState(false);
   const [editForm, setEditForm] = useState<{ weight: string; reps: string }>({ weight: "", reps: "" });
+  const [editDuration, setEditDuration] = useState<{ hours: string; minutes: string }>({
+    hours: "",
+    minutes: "",
+  });
 
   // Fetch workout and user data
   useEffect(() => {
@@ -274,12 +279,27 @@ export default function ActiveWorkoutPage() {
 
   const startEditingSet = (set: WorkoutSet) => {
     setEditingSetId(set.id);
+    if (set.durationSeconds) {
+      const hours = Math.floor(set.durationSeconds / 3600);
+      const minutes = Math.round((set.durationSeconds % 3600) / 60);
+      setEditingSetIsCardio(true);
+      setEditDuration({
+        hours: hours > 0 ? String(hours) : "",
+        minutes: minutes > 0 ? String(minutes) : "",
+      });
+      setEditForm({ weight: "", reps: "" });
+      return;
+    }
+
+    setEditingSetIsCardio(false);
     setEditForm({ weight: String(set.weight), reps: String(set.reps) });
   };
 
   const cancelEditing = () => {
     setEditingSetId(null);
+    setEditingSetIsCardio(false);
     setEditForm({ weight: "", reps: "" });
+    setEditDuration({ hours: "", minutes: "" });
   };
 
   const handleUpdateSet = async (setId: string) => {
@@ -305,6 +325,37 @@ export default function ActiveWorkoutPage() {
       }
     } catch (error) {
       console.error("Failed to update set:", error);
+    } finally {
+      setSavingSet(null);
+    }
+  };
+
+  const handleUpdateCardioSet = async (setId: string) => {
+    const hours = Number(editDuration.hours || 0);
+    const minutes = Number(editDuration.minutes || 0);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return;
+
+    const durationSeconds = Math.round((hours * 60 + minutes) * 60);
+    if (durationSeconds <= 0) return;
+
+    setSavingSet(`edit-${setId}`);
+    try {
+      const response = await fetch(`/api/workouts/${workoutId}/sets/${setId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ durationSeconds }),
+      });
+
+      if (response.ok) {
+        const updatedSet = await response.json();
+        setWorkout(prev => prev ? {
+          ...prev,
+          sets: prev.sets.map(s => s.id === setId ? updatedSet : s)
+        } : prev);
+        cancelEditing();
+      }
+    } catch (error) {
+      console.error("Failed to update cardio set:", error);
     } finally {
       setSavingSet(null);
     }
@@ -363,11 +414,15 @@ export default function ActiveWorkoutPage() {
     acc[set.exercise].push(set);
     return acc;
   }, {} as Record<string, WorkoutSet[]>);
+  const totalCardioSeconds = workout.sets.reduce(
+    (sum, set) => sum + (set.durationSeconds || 0),
+    0
+  );
 
   // Render a set row with edit capability
   const renderSetRow = (set: WorkoutSet, idx: number) => (
     <div key={set.id} className="px-4 py-3 bg-[var(--bg-elevated)]">
-      {editingSetId === set.id && !set.durationSeconds ? (
+      {editingSetId === set.id ? (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-[var(--text-muted)] text-sm">Set {idx + 1}</span>
@@ -375,37 +430,74 @@ export default function ActiveWorkoutPage() {
               <X className="w-4 h-4" />
             </button>
           </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              className="w-24 sm:w-28 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
-              value={editForm.weight}
-              onChange={(e) => setEditForm(prev => ({ ...prev, weight: e.target.value }))}
-            />
-            <span className="text-[var(--text-muted)] shrink-0">x</span>
-            <input
-              type="number"
-              className="w-20 sm:w-24 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
-              value={editForm.reps}
-              onChange={(e) => setEditForm(prev => ({ ...prev, reps: e.target.value }))}
-            />
-            <Button
-              size="sm"
-              onClick={() => handleUpdateSet(set.id)}
-              loading={savingSet === `edit-${set.id}`}
-            >
-              Save
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => handleDeleteSet(set.id)}
-              loading={savingSet === `delete-${set.id}`}
-              className="text-[var(--accent-danger)]"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
+          {editingSetIsCardio ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                placeholder="Hours"
+                className="w-24 sm:w-28 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                value={editDuration.hours}
+                onChange={(e) => setEditDuration(prev => ({ ...prev, hours: e.target.value }))}
+              />
+              <span className="text-[var(--text-muted)] shrink-0">h</span>
+              <input
+                type="number"
+                placeholder="Minutes"
+                className="w-24 sm:w-28 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                value={editDuration.minutes}
+                onChange={(e) => setEditDuration(prev => ({ ...prev, minutes: e.target.value }))}
+              />
+              <span className="text-[var(--text-muted)] shrink-0">m</span>
+              <Button
+                size="sm"
+                onClick={() => handleUpdateCardioSet(set.id)}
+                loading={savingSet === `edit-${set.id}`}
+              >
+                Save
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleDeleteSet(set.id)}
+                loading={savingSet === `delete-${set.id}`}
+                className="text-[var(--accent-danger)]"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                className="w-24 sm:w-28 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                value={editForm.weight}
+                onChange={(e) => setEditForm(prev => ({ ...prev, weight: e.target.value }))}
+              />
+              <span className="text-[var(--text-muted)] shrink-0">x</span>
+              <input
+                type="number"
+                className="w-20 sm:w-24 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                value={editForm.reps}
+                onChange={(e) => setEditForm(prev => ({ ...prev, reps: e.target.value }))}
+              />
+              <Button
+                size="sm"
+                onClick={() => handleUpdateSet(set.id)}
+                loading={savingSet === `edit-${set.id}`}
+              >
+                Save
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleDeleteSet(set.id)}
+                loading={savingSet === `delete-${set.id}`}
+                className="text-[var(--accent-danger)]"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="flex items-center gap-3">
@@ -496,6 +588,9 @@ export default function ActiveWorkoutPage() {
               {elapsedTime}
             </span>
             <span>{workout.sets.length} sets logged</span>
+            {totalCardioSeconds > 0 && (
+              <span>{formatDurationSeconds(totalCardioSeconds)} cardio</span>
+            )}
           </div>
           <p className="text-[var(--text-muted)] text-xs mt-2">
             Bodyweight movements: log 0 for bodyweight, add extra load only.

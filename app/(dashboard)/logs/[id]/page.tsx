@@ -58,6 +58,10 @@ export default async function WorkoutDetailPage({
     (sum, set) => sum + set.weight * set.reps,
     0
   );
+  const totalCardioSeconds = workout.sets.reduce(
+    (sum, set) => sum + (set.durationSeconds || 0),
+    0
+  );
   const exerciseCount = Object.keys(setsByExercise).length;
 
   // Format date
@@ -131,6 +135,11 @@ export default async function WorkoutDetailPage({
           <div className="flex items-center gap-2 text-[var(--text-muted)]">
             <span>{totalVolume.toLocaleString()} lbs volume</span>
           </div>
+          {totalCardioSeconds > 0 && (
+            <div className="flex items-center gap-2 text-[var(--text-muted)]">
+              <span>{formatDurationSeconds(totalCardioSeconds)} cardio</span>
+            </div>
+          )}
           {duration && (
             <div className="flex items-center gap-2 text-[var(--text-muted)]">
               <Clock className="w-4 h-4" />
@@ -147,6 +156,10 @@ export default async function WorkoutDetailPage({
             (sum, set) => sum + set.weight * set.reps,
             0
           );
+          const exerciseCardioSeconds = sets.reduce(
+            (sum, set) => sum + (set.durationSeconds || 0),
+            0
+          );
 
           return (
             <div
@@ -157,8 +170,10 @@ export default async function WorkoutDetailPage({
               <div className="bg-[var(--bg-surface)] px-4 py-3 border-b border-[var(--border-subtle)] flex items-center justify-between">
                 <h3 className="font-bold text-lg">{exerciseName}</h3>
                 <span className="text-sm text-[var(--text-muted)]">
-                  {sets.length} sets &middot; {exerciseVolume.toLocaleString()}{" "}
-                  lbs
+                  {sets.length} sets &middot;{" "}
+                  {exerciseCardioSeconds > 0
+                    ? `${formatDurationSeconds(exerciseCardioSeconds)}`
+                    : `${exerciseVolume.toLocaleString()} lbs`}
                 </span>
               </div>
 
