@@ -119,43 +119,45 @@ export default async function WorkoutPage() {
             </div>
 
             {/* Exercises Table */}
-            <table className="data-table">
-              <thead>
-                <tr className="bg-[var(--bg-elevated)]">
-                  <th className="w-1/3">Exercise</th>
-                  <th>Sets</th>
-                </tr>
-              </thead>
-              <tbody>
-                {workout.exercises.map((exercise, idx) => (
-                  <tr key={idx}>
-                    <td className="font-medium">{exercise.name}</td>
-                    <td>
-                      {Array.isArray(exercise.sets) ? (
-                        <div className="flex flex-wrap gap-2">
-                          {exercise.sets.map((set, setIdx) => (
-                            <span
-                              key={setIdx}
-                              className="inline-flex items-center gap-1 font-[family-name:var(--font-geist-mono)] text-sm bg-[var(--bg-elevated)] px-3 py-1 border border-[var(--border-subtle)]"
-                            >
-                              <span className="text-white">{set.weight}</span>
-                              <span className="text-[var(--text-muted)]">×</span>
-                              <span className={String(set.reps).includes('+') ? 'text-[var(--accent-success)]' : 'text-white'}>
-                                {set.reps}
-                              </span>
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-[var(--text-secondary)] font-[family-name:var(--font-geist-mono)] text-sm">
-                          {exercise.sets}
-                        </span>
-                      )}
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="data-table min-w-[520px]">
+                <thead>
+                  <tr className="bg-[var(--bg-elevated)]">
+                    <th className="w-1/3">Exercise</th>
+                    <th>Sets</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {workout.exercises.map((exercise, idx) => (
+                    <tr key={idx}>
+                      <td className="font-medium">{exercise.name}</td>
+                      <td>
+                        {Array.isArray(exercise.sets) ? (
+                          <div className="flex flex-wrap gap-2">
+                            {exercise.sets.map((set, setIdx) => (
+                              <span
+                                key={setIdx}
+                                className="inline-flex items-center gap-1 font-[family-name:var(--font-geist-mono)] text-sm bg-[var(--bg-elevated)] px-3 py-1 border border-[var(--border-subtle)]"
+                              >
+                                <span className="text-white">{set.weight}</span>
+                                <span className="text-[var(--text-muted)]">×</span>
+                                <span className={String(set.reps).includes('+') ? 'text-[var(--accent-success)]' : 'text-white'}>
+                                  {set.reps}
+                                </span>
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-[var(--text-secondary)] font-[family-name:var(--font-geist-mono)] text-sm">
+                            {exercise.sets}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         ))}
       </div>

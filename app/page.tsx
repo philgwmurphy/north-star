@@ -18,7 +18,7 @@ export default async function LandingPage() {
       <div className="relative overflow-hidden">
         {/* Header */}
         <header className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white flex items-center justify-center">
                 <span className="text-black text-xl font-bold">*</span>
@@ -27,12 +27,12 @@ export default async function LandingPage() {
                 NORTH STAR
               </span>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
               <SignInButton mode="modal">
-                <Button variant="ghost">Sign In</Button>
+                <Button variant="ghost" className="w-full sm:w-auto">Sign In</Button>
               </SignInButton>
               <SignUpButton mode="modal">
-                <Button>Get Started</Button>
+                <Button className="w-full sm:w-auto">Get Started</Button>
               </SignUpButton>
             </div>
           </div>

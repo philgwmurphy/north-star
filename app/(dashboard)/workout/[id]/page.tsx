@@ -326,12 +326,12 @@ export default function ActiveWorkoutPage() {
                       </div>
                     ))}
                     <div className="px-4 py-3">
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                         <span className="text-[var(--text-muted)] w-16">Set {completedSets.length + 1}</span>
                         <input
                           type="number"
                           placeholder="Weight"
-                          className="w-24 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                          className="w-full sm:w-24 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                           value={inlineForms[getFormKey(exercise.name, completedSets.length)]?.weight || ""}
                           onChange={(e) => handleInlineChange(getFormKey(exercise.name, completedSets.length), "weight", e.target.value)}
                         />
@@ -339,12 +339,13 @@ export default function ActiveWorkoutPage() {
                         <input
                           type="number"
                           placeholder="Reps"
-                          className="w-20 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                          className="w-full sm:w-20 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                           value={inlineForms[getFormKey(exercise.name, completedSets.length)]?.reps || ""}
                           onChange={(e) => handleInlineChange(getFormKey(exercise.name, completedSets.length), "reps", e.target.value)}
                         />
                         <Button
                           size="sm"
+                          className="w-full sm:w-auto"
                           onClick={() => {
                             const formKey = getFormKey(exercise.name, completedSets.length);
                             const form = inlineForms[formKey];
@@ -389,30 +390,31 @@ export default function ActiveWorkoutPage() {
                                 Target: {targetSet.weight} x {targetSet.reps}
                               </span>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="number"
-                                placeholder={String(targetSet.weight)}
-                                className="flex-1 min-w-0 px-2 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] text-sm focus:border-white focus:outline-none"
-                                value={form.weight || ""}
-                                onChange={(e) => handleInlineChange(formKey, "weight", e.target.value)}
-                              />
-                              <span className="text-[var(--text-muted)]">x</span>
-                              <input
-                                type="number"
-                                placeholder={String(targetSet.reps).replace('+', '')}
-                                className="w-16 shrink-0 px-2 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] text-sm focus:border-white focus:outline-none"
-                                value={form.reps || ""}
-                                onChange={(e) => handleInlineChange(formKey, "reps", e.target.value)}
-                              />
-                              <Button
-                                size="sm"
-                                onClick={() => handleLogSet(exercise.name, setIdx, targetSet.weight, targetSet.reps)}
-                                loading={savingSet === formKey}
-                              >
-                                Log
-                              </Button>
-                            </div>
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                            <input
+                              type="number"
+                              placeholder={String(targetSet.weight)}
+                              className="w-full sm:flex-1 sm:min-w-0 px-2 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] text-sm focus:border-white focus:outline-none"
+                              value={form.weight || ""}
+                              onChange={(e) => handleInlineChange(formKey, "weight", e.target.value)}
+                            />
+                            <span className="text-[var(--text-muted)]">x</span>
+                            <input
+                              type="number"
+                              placeholder={String(targetSet.reps).replace('+', '')}
+                              className="w-full sm:w-16 sm:shrink-0 px-2 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] text-sm focus:border-white focus:outline-none"
+                              value={form.reps || ""}
+                              onChange={(e) => handleInlineChange(formKey, "reps", e.target.value)}
+                            />
+                            <Button
+                              size="sm"
+                              className="w-full sm:w-auto"
+                              onClick={() => handleLogSet(exercise.name, setIdx, targetSet.weight, targetSet.reps)}
+                              loading={savingSet === formKey}
+                            >
+                              Log
+                            </Button>
+                          </div>
                           </div>
                         )}
                       </div>
