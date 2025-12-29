@@ -264,6 +264,14 @@ export default function ActiveWorkoutPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8 pb-6 border-b border-[var(--border-subtle)]">
         <div>
+          {workout.programKey && programs[workout.programKey] && (
+            <p className="text-[var(--text-muted)] text-sm uppercase tracking-wider mb-1">
+              {programs[workout.programKey].name}
+              {programs[workout.programKey].hasWeeks && userData?.currentWeek && (
+                <span className="ml-2">Week {userData.currentWeek}</span>
+              )}
+            </p>
+          )}
           <h1 className="font-[family-name:var(--font-bebas-neue)] text-3xl tracking-wide">
             {workout.programDay || "CUSTOM WORKOUT"}
           </h1>
@@ -337,7 +345,13 @@ export default function ActiveWorkoutPage() {
                         />
                         <Button
                           size="sm"
-                          onClick={() => handleLogSet(exercise.name, completedSets.length, "", "")}
+                          onClick={() => {
+                            const formKey = getFormKey(exercise.name, completedSets.length);
+                            const form = inlineForms[formKey];
+                            if (form?.weight && form?.reps) {
+                              handleLogSet(exercise.name, completedSets.length, form.weight, form.reps);
+                            }
+                          }}
                           loading={savingSet === getFormKey(exercise.name, completedSets.length)}
                           disabled={!inlineForms[getFormKey(exercise.name, completedSets.length)]?.weight || !inlineForms[getFormKey(exercise.name, completedSets.length)]?.reps}
                         >

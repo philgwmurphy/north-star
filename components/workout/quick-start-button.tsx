@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Play, ChevronRight } from "lucide-react";
+import { Play, ChevronRight, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { programs, type RepMaxes } from "@/lib/programs";
 
@@ -15,11 +15,13 @@ interface QuickStartButtonProps {
 export function QuickStartButton({ programKey, repMaxes, nextDay }: QuickStartButtonProps) {
   const router = useRouter();
   const [isStarting, setIsStarting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleQuickStart = async () => {
     if (!programKey || !repMaxes) return;
 
     setIsStarting(true);
+    setError(null);
 
     try {
       const response = await fetch("/api/workouts", {
@@ -36,9 +38,11 @@ export function QuickStartButton({ programKey, repMaxes, nextDay }: QuickStartBu
         router.push(`/workout/${workout.id}`);
         return;
       }
+      setError("Failed to start workout. Please try again.");
       setIsStarting(false);
-    } catch (error) {
-      console.error("Failed to start workout:", error);
+    } catch (err) {
+      console.error("Failed to start workout:", err);
+      setError("Failed to start workout. Please try again.");
       setIsStarting(false);
     }
   };
@@ -62,32 +66,40 @@ export function QuickStartButton({ programKey, repMaxes, nextDay }: QuickStartBu
   const program = programs[programKey];
 
   return (
-    <button
-      onClick={handleQuickStart}
-      disabled={isStarting}
-      className="w-full group bg-white text-black p-8 hover:bg-neutral-200 active:bg-neutral-300 transition-colors text-left disabled:opacity-50"
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-neutral-600 mb-1">
-            Quick Start
-          </p>
-          <h2 className="font-[family-name:var(--font-bebas-neue)] text-3xl tracking-wide">
-            START WORKOUT
-          </h2>
-          <p className="text-neutral-600 mt-1">
-            {nextDay} &bull; {program?.name}
-          </p>
-        </div>
+    <div>
+      <button
+        onClick={handleQuickStart}
+        disabled={isStarting}
+        className="w-full group bg-white text-black p-8 hover:bg-neutral-200 active:bg-neutral-300 transition-colors text-left disabled:opacity-50"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-neutral-600 mb-1">
+              Quick Start
+            </p>
+            <h2 className="font-[family-name:var(--font-bebas-neue)] text-3xl tracking-wide">
+              START WORKOUT
+            </h2>
+            <p className="text-neutral-600 mt-1">
+              {nextDay} &bull; {program?.name}
+            </p>
+          </div>
 
-        <div className="w-14 h-14 bg-black flex items-center justify-center group-hover:bg-neutral-800 transition-colors">
-          {isStarting ? (
-            <div className="w-6 h-6 border-2 border-white border-t-transparent animate-spin" />
-          ) : (
-            <Play className="w-6 h-6 text-white fill-white ml-0.5" />
-          )}
+          <div className="w-14 h-14 bg-black flex items-center justify-center group-hover:bg-neutral-800 transition-colors">
+            {isStarting ? (
+              <div className="w-6 h-6 border-2 border-white border-t-transparent animate-spin" />
+            ) : (
+              <Play className="w-6 h-6 text-white fill-white ml-0.5" />
+            )}
+          </div>
         </div>
-      </div>
-    </button>
+      </button>
+      {error && (
+        <div className="mt-2 p-3 bg-[var(--bg-surface)] border border-red-500 text-red-400 text-sm flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          {error}
+        </div>
+      )}
+    </div>
   );
 }

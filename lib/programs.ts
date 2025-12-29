@@ -31,6 +31,7 @@ export interface Program {
   description: string;
   hasWeeks?: boolean;
   totalWeeks?: number;
+  usesTrainingMax?: boolean; // Whether to display 90% training max (for 5/3/1 programs)
   getWorkouts: (maxes: RepMaxes, week?: number) => WorkoutDay[];
 }
 
@@ -42,6 +43,7 @@ export const programs: Record<string, Program> = {
     cycleLength: "4 weeks",
     hasWeeks: true,
     totalWeeks: 4,
+    usesTrainingMax: true,
     description:
       "The classic periodized strength program. Slow, steady progress with built-in deload weeks. Uses training maxes at 90% for sustainable gains.",
     getWorkouts: (maxes: RepMaxes, week: number = 1): WorkoutDay[] => {
@@ -131,6 +133,7 @@ export const programs: Record<string, Program> = {
     level: "intermediate",
     daysPerWeek: 5,
     cycleLength: "1 week",
+    usesTrainingMax: true,
     description:
       "High volume linear progression based on 5/3/1. Weekly weight increases based on AMRAP performance.",
     getWorkouts: (maxes: RepMaxes): WorkoutDay[] => {
@@ -619,6 +622,7 @@ export const programs: Record<string, Program> = {
     cycleLength: "4 weeks",
     hasWeeks: true,
     totalWeeks: 4,
+    usesTrainingMax: true,
     description:
       "Wendler's high-volume variant. Main 5/3/1 work followed by 5x10 at 50-60% for serious mass and strength gains.",
     getWorkouts: (maxes: RepMaxes, week: number = 1): WorkoutDay[] => {
@@ -711,6 +715,7 @@ export const programs: Record<string, Program> = {
     cycleLength: "4 weeks",
     hasWeeks: true,
     totalWeeks: 4,
+    usesTrainingMax: true,
     description:
       "After main 5/3/1 sets, repeat the first working set for additional volume. Great for building work capacity.",
     getWorkouts: (maxes: RepMaxes, week: number = 1): WorkoutDay[] => {

@@ -88,6 +88,16 @@ export default function ProgramsPage() {
       return;
     }
 
+    // Verify all 1RMs are calculated
+    const all1RMsCalculated = LIFTS.every((lift) =>
+      calculated1RMs[lift.key] && calculated1RMs[lift.key] > 0
+    );
+
+    if (!all1RMsCalculated) {
+      alert("Please fill in valid weight and reps for all lifts");
+      return;
+    }
+
     if (!selectedProgram) {
       alert("Please select a program");
       return;
@@ -100,7 +110,7 @@ export default function ProgramsPage() {
         exercise: lift.key,
         weight: parseFloat(repMaxes[lift.key].weight),
         reps: parseInt(repMaxes[lift.key].reps),
-        oneRM: calculated1RMs[lift.key],
+        oneRM: calculated1RMs[lift.key]!,
       }));
 
       await fetch("/api/user/rep-maxes", {

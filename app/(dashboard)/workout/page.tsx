@@ -51,12 +51,12 @@ export default async function WorkoutPage() {
   const program = programs[user.selectedProgram];
   const workouts = program.getWorkouts(repMaxes, user.currentWeek);
 
-  const trainingMaxes = {
+  const trainingMaxes = program.usesTrainingMax ? {
     squat: Math.round(repMaxes.squat * 0.9),
     bench: Math.round(repMaxes.bench * 0.9),
     deadlift: Math.round(repMaxes.deadlift * 0.9),
     ohp: Math.round(repMaxes.ohp * 0.9),
-  };
+  } : null;
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -71,19 +71,21 @@ export default async function WorkoutPage() {
           </h1>
         </div>
 
-        {/* Training Maxes */}
-        <div className="hidden sm:flex gap-6 text-right">
-          {Object.entries(trainingMaxes).map(([lift, value]) => (
-            <div key={lift}>
-              <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">
-                {lift} TM
+        {/* Training Maxes - only shown for 5/3/1 programs */}
+        {trainingMaxes && (
+          <div className="hidden sm:flex gap-6 text-right">
+            {Object.entries(trainingMaxes).map(([lift, value]) => (
+              <div key={lift}>
+                <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">
+                  {lift} TM
+                </div>
+                <div className="font-[family-name:var(--font-geist-mono)] text-lg">
+                  {value}
+                </div>
               </div>
-              <div className="font-[family-name:var(--font-geist-mono)] text-lg">
-                {value}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Week Selector for 5/3/1 */}
