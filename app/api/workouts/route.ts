@@ -12,17 +12,20 @@ export async function POST(request: Request) {
 
     const contentType = request.headers.get("content-type") || "";
     const wantsJson = contentType.includes("application/json");
-    let programKey: string;
-    let programDay: string;
+    let programKey: string | null = null;
+    let programDay: string | null = null;
+    let workoutName: string | null = null;
 
     if (contentType.includes("application/json")) {
       const body = await request.json();
-      programKey = body.programKey;
-      programDay = body.programDay;
+      programKey = body.programKey || null;
+      programDay = body.programDay || null;
+      workoutName = body.workoutName || null;
     } else {
       const formData = await request.formData();
-      programKey = formData.get("programKey") as string;
-      programDay = formData.get("programDay") as string;
+      programKey = (formData.get("programKey") as string) || null;
+      programDay = (formData.get("programDay") as string) || null;
+      workoutName = (formData.get("workoutName") as string) || null;
     }
 
     const existingWorkout = await prisma.workout.findFirst({
@@ -40,11 +43,12 @@ export async function POST(request: Request) {
       return NextResponse.redirect(new URL(`/workout/${existingWorkout.id}`, request.url));
     }
 
+    // For custom workouts, use workoutName as programDay for display
     const workout = await prisma.workout.create({
       data: {
         userId,
-        programKey,
-        programDay,
+        programKey: programKey || null,
+        programDay: programDay || workoutName || null,
       },
     });
 
