@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { BarChart3, ClipboardList, BookOpen, Settings, ChevronRight, ArrowRight } from "lucide-react";
 import { QuickStartButton } from "@/components/workout/quick-start-button";
+import { BodyWeightQuickEntry } from "@/components/body-weight/quick-entry";
 import { prisma } from "@/lib/db";
 import { programs, type RepMaxes } from "@/lib/programs";
 import { formatDuration, formatRelativeTime } from "@/lib/utils";
@@ -19,9 +20,17 @@ async function getUserData(userId: string) {
           sets: true,
         },
       },
+      settings: true,
     },
   });
   return user;
+}
+
+async function getLatestBodyWeight(userId: string) {
+  return await prisma.bodyWeight.findFirst({
+    where: { userId },
+    orderBy: { recordedAt: "desc" },
+  });
 }
 
 async function getActiveWorkout(userId: string) {
@@ -46,6 +55,7 @@ export default async function HomePage() {
 
   const user = await getUserData(userId);
   const activeWorkout = await getActiveWorkout(userId);
+  const latestBodyWeight = await getLatestBodyWeight(userId);
 
   // Convert rep maxes array to object
   const repMaxes: RepMaxes | null = user?.repMaxes.length === 4
@@ -120,6 +130,18 @@ export default async function HomePage() {
             href="/settings"
           />
         </div>
+      </section>
+
+      {/* Body Weight Quick Entry */}
+      <section className="mb-8">
+        <BodyWeightQuickEntry
+          latestWeight={latestBodyWeight ? {
+            weight: latestBodyWeight.weight,
+            unit: latestBodyWeight.unit,
+            recordedAt: latestBodyWeight.recordedAt.toISOString(),
+          } : null}
+          defaultUnit={user?.settings?.weightUnit || "lbs"}
+        />
       </section>
 
       {/* Recent Workouts */}

@@ -20,6 +20,7 @@ model User {
   // Fitness data
   repMaxes        RepMax[]
   workouts        Workout[]
+  bodyWeights     BodyWeight[]
   selectedProgram String?
   currentWeek     Int       @default(1)
   settings        UserSettings?
@@ -80,4 +81,18 @@ model UserSettings {
   restTimerDefault Int     @default(180)   // seconds
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model BodyWeight {
+  id         String   @id @default(cuid())
+  userId     String
+  weight     Float
+  unit       String   @default("lbs")
+  recordedAt DateTime @default(now())
+  notes      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, recordedAt])
 }

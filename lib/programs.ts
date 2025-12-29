@@ -448,12 +448,12 @@ export const programs: Record<string, Program> = {
     daysPerWeek: 3,
     cycleLength: "1 week",
     description:
-      "Volume day, recovery day, intensity day. 5x5 Monday at 90% of 5RM, light Wednesday, new 5RM PR Friday.",
+      "Volume day, light day, intensity day. 5x5 Monday at ~90% of 5RM, light work Wednesday at 70-80% of Monday, new 5RM PRs Friday with deadlift on intensity day.",
     getWorkouts: (maxes: RepMaxes): WorkoutDay[] => {
       // Texas Method uses 5RM, not 1RM
       // 5RM is approximately 85% of 1RM
       // Volume Day: 90% of 5RM = ~77% of 1RM
-      // Recovery Day: 80% of Volume Day weight
+      // Light Day: 70-80% of Volume Day weight
       // Intensity Day: 5RM (work up to new PR)
       const fiveRM = {
         squat: roundWeight(maxes.squat * 0.85),
@@ -465,11 +465,13 @@ export const programs: Record<string, Program> = {
       const volumeDay = {
         squat: roundWeight(fiveRM.squat * 0.9),
         bench: roundWeight(fiveRM.bench * 0.9),
+        press: roundWeight(fiveRM.ohp * 0.9),
       };
 
-      const recoveryDay = {
-        squat: roundWeight(volumeDay.squat * 0.8),
-        press: roundWeight(fiveRM.ohp * 0.9),
+      const lightDay = {
+        squat: roundWeight(volumeDay.squat * 0.6),
+        bench: roundWeight(volumeDay.bench * 0.65),
+        press: roundWeight(volumeDay.press * 0.75),
       };
 
       return [
@@ -486,29 +488,42 @@ export const programs: Record<string, Program> = {
               sets: Array(5).fill({ weight: volumeDay.bench, reps: 5 }),
             },
             {
-              name: "Deadlift",
-              sets: [{ weight: roundWeight(fiveRM.deadlift * 0.9), reps: 5 }],
+              name: "Overhead Press",
+              sets: Array(5).fill({ weight: volumeDay.press, reps: 5 }),
             },
+            { name: "Weighted Dips", sets: "3x8" },
           ],
         },
         {
           day: "Wednesday",
-          focus: "Recovery Day",
+          focus: "Light Day",
           exercises: [
             {
               name: "Squat",
               sets: [
-                { weight: recoveryDay.squat, reps: 5 },
-                { weight: recoveryDay.squat, reps: 5 },
+                { weight: lightDay.squat, reps: 5 },
+                { weight: lightDay.squat, reps: 5 },
+              ],
+            },
+            {
+              name: "Bench Press",
+              sets: [
+                { weight: lightDay.bench, reps: 5 },
+                { weight: lightDay.bench, reps: 5 },
+                { weight: lightDay.bench, reps: 5 },
               ],
             },
             {
               name: "Overhead Press",
               sets: [
-                { weight: recoveryDay.press, reps: 5 },
-                { weight: recoveryDay.press, reps: 5 },
-                { weight: recoveryDay.press, reps: 5 },
+                { weight: lightDay.press, reps: 5 },
+                { weight: lightDay.press, reps: 5 },
+                { weight: lightDay.press, reps: 5 },
               ],
+            },
+            {
+              name: "Power Clean",
+              sets: Array(5).fill({ weight: roundWeight(maxes.deadlift * 0.6), reps: 3 }),
             },
             { name: "Chin-ups", sets: "3x max" },
             { name: "Back Extensions", sets: "5x10" },
@@ -527,8 +542,12 @@ export const programs: Record<string, Program> = {
               sets: [{ weight: fiveRM.bench, reps: "5 PR" }],
             },
             {
-              name: "Power Clean",
-              sets: Array(5).fill({ weight: roundWeight(maxes.deadlift * 0.5), reps: 3 }),
+              name: "Overhead Press",
+              sets: [{ weight: fiveRM.ohp, reps: "5 PR" }],
+            },
+            {
+              name: "Deadlift",
+              sets: [{ weight: fiveRM.deadlift, reps: "5 PR" }],
             },
           ],
         },
@@ -542,35 +561,26 @@ export const programs: Record<string, Program> = {
     daysPerWeek: 3,
     cycleLength: "1 week",
     description:
-      "Linear progression with AMRAP final sets. Reset at 90% after stalls. Great for flexible beginners.",
+      "Base program: press/bench alternating, squat every workout, and deadlift once per week. Two sets of five plus a rep-max set.",
     getWorkouts: (maxes: RepMaxes): WorkoutDay[] => {
       const w = {
-        squat: roundWeight(maxes.squat * 0.65),
-        bench: roundWeight(maxes.bench * 0.65),
-        ohp: roundWeight(maxes.ohp * 0.65),
-        deadlift: roundWeight(maxes.deadlift * 0.65),
-        row: roundWeight(maxes.bench * 0.65),
+        squat: roundWeight(maxes.squat * 0.75),
+        bench: roundWeight(maxes.bench * 0.75),
+        ohp: roundWeight(maxes.ohp * 0.75),
+        deadlift: roundWeight(maxes.deadlift * 0.75),
       };
 
       return [
         {
           day: "Workout A",
-          focus: "Bench/Row/Squat",
+          focus: "Press/Squat",
           exercises: [
             {
-              name: "Bench Press",
+              name: "Overhead Press",
               sets: [
-                { weight: w.bench, reps: 5 },
-                { weight: w.bench, reps: 5 },
-                { weight: w.bench, reps: "5+" },
-              ],
-            },
-            {
-              name: "Barbell Row",
-              sets: [
-                { weight: w.row, reps: 5 },
-                { weight: w.row, reps: 5 },
-                { weight: w.row, reps: "5+" },
+                { weight: w.ohp, reps: 5 },
+                { weight: w.ohp, reps: 5 },
+                { weight: w.ohp, reps: "5+" },
               ],
             },
             {
@@ -585,22 +595,14 @@ export const programs: Record<string, Program> = {
         },
         {
           day: "Workout B",
-          focus: "OHP/Chin-ups/Deadlift",
+          focus: "Bench/Deadlift",
           exercises: [
             {
-              name: "Overhead Press",
+              name: "Bench Press",
               sets: [
-                { weight: w.ohp, reps: 5 },
-                { weight: w.ohp, reps: 5 },
-                { weight: w.ohp, reps: "5+" },
-              ],
-            },
-            {
-              name: "Chin-ups",
-              sets: [
-                { weight: "BW", reps: 5 },
-                { weight: "BW", reps: 5 },
-                { weight: "BW", reps: "5+" },
+                { weight: w.bench, reps: 5 },
+                { weight: w.bench, reps: 5 },
+                { weight: w.bench, reps: "5+" },
               ],
             },
             {
@@ -1113,46 +1115,168 @@ export const programs: Record<string, Program> = {
     hasWeeks: true,
     totalWeeks: 16,
     description:
-      "Chad Wesley Smith's periodized system. Waves of 10s, 8s, 5s, and 3s with progressive overload. Built for athletes.",
+      "Chad Wesley Smith's 2.0 system. Four 4-week waves (10s/8s/5s/3s) using a 90% working max, with accumulation, intensification, realization, and deload weeks.",
     getWorkouts: (maxes: RepMaxes, week: number = 1): WorkoutDay[] => {
       const tm = {
-        squat: maxes.squat,
-        bench: maxes.bench,
-        deadlift: maxes.deadlift,
-        ohp: maxes.ohp,
+        squat: roundWeight(maxes.squat * 0.9),
+        bench: roundWeight(maxes.bench * 0.9),
+        deadlift: roundWeight(maxes.deadlift * 0.9),
+        ohp: roundWeight(maxes.ohp * 0.9),
       };
 
-      // Determine which wave and which week within the wave
-      // Weeks 1-4: 10s wave, 5-8: 8s wave, 9-12: 5s wave, 13-16: 3s wave
-      let wave: { reps: number; pcts: number[] };
-      let weekInWave: number;
+      type WaveKey = "10s" | "8s" | "5s" | "3s";
+      type PhaseKey = "accumulation" | "intensification" | "realization" | "deload";
 
-      if (week <= 4) {
-        wave = { reps: 10, pcts: [0.6, 0.65, 0.7, 0.75] };
-        weekInWave = week;
-      } else if (week <= 8) {
-        wave = { reps: 8, pcts: [0.65, 0.7, 0.75, 0.8] };
-        weekInWave = week - 4;
-      } else if (week <= 12) {
-        wave = { reps: 5, pcts: [0.7, 0.75, 0.8, 0.85] };
-        weekInWave = week - 8;
-      } else {
-        wave = { reps: 3, pcts: [0.75, 0.8, 0.85, 0.9] };
-        weekInWave = week - 12;
-      }
+      const waveOrder: WaveKey[] = ["10s", "8s", "5s", "3s"];
+      const waveIndex = Math.floor((week - 1) / 4);
+      const wave: WaveKey = waveOrder[Math.min(waveIndex, waveOrder.length - 1)];
+      const weekInWave = ((week - 1) % 4) + 1;
+      const phase: PhaseKey =
+        weekInWave === 1
+          ? "accumulation"
+          : weekInWave === 2
+          ? "intensification"
+          : weekInWave === 3
+          ? "realization"
+          : "deload";
 
-      const pct = wave.pcts[weekInWave - 1];
-      const isDeload = weekInWave === 4;
-      const isAmrap = weekInWave === 3;
+      const wavePrescriptions: Record<
+        WaveKey,
+        {
+          accumulation: { pct: number; sets: number; reps: number };
+          intensification: { warmups: WorkoutSet[]; work: { pct: number; sets: number; reps: number } };
+          realization: { warmups: WorkoutSet[]; top: { pct: number; reps: string } };
+        }
+      > = {
+        "10s": {
+          accumulation: { pct: 0.6, sets: 5, reps: 10 },
+          intensification: {
+            warmups: [
+              { weight: 0.55, reps: 5 },
+              { weight: 0.625, reps: 5 },
+            ],
+            work: { pct: 0.675, sets: 3, reps: 10 },
+          },
+          realization: {
+            warmups: [
+              { weight: 0.5, reps: 5 },
+              { weight: 0.6, reps: 3 },
+              { weight: 0.7, reps: 1 },
+            ],
+            top: { pct: 0.75, reps: "10+" },
+          },
+        },
+        "8s": {
+          accumulation: { pct: 0.65, sets: 5, reps: 8 },
+          intensification: {
+            warmups: [
+              { weight: 0.6, reps: 3 },
+              { weight: 0.675, reps: 3 },
+            ],
+            work: { pct: 0.725, sets: 3, reps: 8 },
+          },
+          realization: {
+            warmups: [
+              { weight: 0.5, reps: 5 },
+              { weight: 0.6, reps: 3 },
+              { weight: 0.7, reps: 2 },
+              { weight: 0.75, reps: 1 },
+            ],
+            top: { pct: 0.8, reps: "8+" },
+          },
+        },
+        "5s": {
+          accumulation: { pct: 0.7, sets: 6, reps: 5 },
+          intensification: {
+            warmups: [
+              { weight: 0.65, reps: 2 },
+              { weight: 0.725, reps: 2 },
+            ],
+            work: { pct: 0.775, sets: 4, reps: 5 },
+          },
+          realization: {
+            warmups: [
+              { weight: 0.5, reps: 5 },
+              { weight: 0.6, reps: 3 },
+              { weight: 0.7, reps: 2 },
+              { weight: 0.75, reps: 1 },
+              { weight: 0.8, reps: 1 },
+            ],
+            top: { pct: 0.85, reps: "5+" },
+          },
+        },
+        "3s": {
+          accumulation: { pct: 0.75, sets: 7, reps: 3 },
+          intensification: {
+            warmups: [
+              { weight: 0.7, reps: 1 },
+              { weight: 0.775, reps: 1 },
+            ],
+            work: { pct: 0.82, sets: 5, reps: 3 },
+          },
+          realization: {
+            warmups: [
+              { weight: 0.5, reps: 5 },
+              { weight: 0.6, reps: 3 },
+              { weight: 0.7, reps: 2 },
+              { weight: 0.75, reps: 1 },
+              { weight: 0.8, reps: 1 },
+              { weight: 0.85, reps: 1 },
+            ],
+            top: { pct: 0.9, reps: "3+" },
+          },
+        },
+      };
 
-      const mainSets = isDeload
-        ? [{ weight: roundWeight(tm.squat * (pct - 0.2)), reps: 5 }]
-        : isAmrap
-        ? [
-            ...Array(2).fill({ weight: roundWeight(tm.squat * pct), reps: wave.reps }),
-            { weight: roundWeight(tm.squat * pct), reps: `${wave.reps}+` },
-          ]
-        : Array(3).fill({ weight: roundWeight(tm.squat * pct), reps: wave.reps });
+      const deloadSets: WorkoutSet[] = [
+        { weight: 0.4, reps: 5 },
+        { weight: 0.5, reps: 5 },
+        { weight: 0.6, reps: 5 },
+      ];
+
+      const buildSets = (liftMax: number): WorkoutSet[] => {
+        if (phase === "deload") {
+          return deloadSets.map((s) => ({ weight: roundWeight(liftMax * Number(s.weight)), reps: s.reps }));
+        }
+
+        const prescription = wavePrescriptions[wave][phase];
+
+        if (phase === "accumulation") {
+          const accum = prescription as { pct: number; sets: number; reps: number };
+          return Array(accum.sets)
+            .fill(0)
+            .map(() => ({
+              weight: roundWeight(liftMax * accum.pct),
+              reps: accum.reps,
+            }));
+        }
+
+        if (phase === "intensification") {
+          const intens = prescription as { warmups: WorkoutSet[]; work: { pct: number; sets: number; reps: number } };
+          return [
+            ...intens.warmups.map((s) => ({
+              weight: roundWeight(liftMax * Number(s.weight)),
+              reps: s.reps,
+            })),
+            ...Array(intens.work.sets)
+              .fill(0)
+              .map(() => ({
+                weight: roundWeight(liftMax * intens.work.pct),
+                reps: intens.work.reps,
+              })),
+          ];
+        }
+
+        // realization phase
+        const real = prescription as { warmups: WorkoutSet[]; top: { pct: number; reps: string } };
+        return [
+          ...real.warmups.map((s) => ({
+            weight: roundWeight(liftMax * Number(s.weight)),
+            reps: s.reps,
+          })),
+          { weight: roundWeight(liftMax * real.top.pct), reps: real.top.reps },
+        ];
+      };
 
       return [
         {
@@ -1161,10 +1285,10 @@ export const programs: Record<string, Program> = {
           exercises: [
             {
               name: "Squat",
-              sets: mainSets.map((s) => ({ ...s, weight: roundWeight(tm.squat * pct) })),
+              sets: buildSets(tm.squat),
             },
-            { name: "Leg Press", sets: isDeload ? "2x10" : "4x10" },
-            { name: "Leg Curls", sets: isDeload ? "2x10" : "3x12" },
+            { name: "Leg Press", sets: phase === "deload" ? "2x10" : "4x10" },
+            { name: "Leg Curls", sets: phase === "deload" ? "2x10" : "3x12" },
           ],
         },
         {
@@ -1173,10 +1297,10 @@ export const programs: Record<string, Program> = {
           exercises: [
             {
               name: "Bench Press",
-              sets: mainSets.map((s) => ({ ...s, weight: roundWeight(tm.bench * pct) })),
+              sets: buildSets(tm.bench),
             },
-            { name: "Dumbbell Row", sets: isDeload ? "2x10" : "4x10" },
-            { name: "Dips", sets: isDeload ? "2x10" : "3x12" },
+            { name: "Dumbbell Row", sets: phase === "deload" ? "2x10" : "4x10" },
+            { name: "Dips", sets: phase === "deload" ? "2x10" : "3x12" },
           ],
         },
         {
@@ -1185,10 +1309,10 @@ export const programs: Record<string, Program> = {
           exercises: [
             {
               name: "Deadlift",
-              sets: mainSets.map((s) => ({ ...s, weight: roundWeight(tm.deadlift * pct) })),
+              sets: buildSets(tm.deadlift),
             },
-            { name: "Front Squat", sets: isDeload ? "2x6" : "3x8" },
-            { name: "Ab Wheel", sets: isDeload ? "2x10" : "3x15" },
+            { name: "Front Squat", sets: phase === "deload" ? "2x6" : "3x8" },
+            { name: "Ab Wheel", sets: phase === "deload" ? "2x10" : "3x15" },
           ],
         },
         {
@@ -1197,10 +1321,10 @@ export const programs: Record<string, Program> = {
           exercises: [
             {
               name: "Overhead Press",
-              sets: mainSets.map((s) => ({ ...s, weight: roundWeight(tm.ohp * pct) })),
+              sets: buildSets(tm.ohp),
             },
-            { name: "Pull-ups", sets: isDeload ? "2x max" : "4x max" },
-            { name: "Lateral Raises", sets: isDeload ? "2x12" : "3x15" },
+            { name: "Pull-ups", sets: phase === "deload" ? "2x max" : "4x max" },
+            { name: "Lateral Raises", sets: phase === "deload" ? "2x12" : "3x15" },
           ],
         },
       ];

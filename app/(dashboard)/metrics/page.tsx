@@ -3,21 +3,28 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatCard } from "@/components/workout/stat-card";
+import { BodyWeightChart } from "@/components/body-weight/trend-chart";
 import { formatLargeNumber } from "@/lib/utils";
 
 async function getMetrics(userId: string) {
-  const workouts = await prisma.workout.findMany({
-    where: { userId },
-    include: {
-      sets: true,
-    },
-  });
+  const [workouts, repMaxes, bodyWeights] = await Promise.all([
+    prisma.workout.findMany({
+      where: { userId },
+      include: {
+        sets: true,
+      },
+    }),
+    prisma.repMax.findMany({
+      where: { userId },
+    }),
+    prisma.bodyWeight.findMany({
+      where: { userId },
+      orderBy: { recordedAt: "desc" },
+      take: 90,
+    }),
+  ]);
 
-  const repMaxes = await prisma.repMax.findMany({
-    where: { userId },
-  });
-
-  return { workouts, repMaxes };
+  return { workouts, repMaxes, bodyWeights };
 }
 
 export default async function MetricsPage() {
@@ -27,7 +34,7 @@ export default async function MetricsPage() {
     redirect("/sign-in");
   }
 
-  const { workouts, repMaxes } = await getMetrics(userId);
+  const { workouts, repMaxes, bodyWeights } = await getMetrics(userId);
 
   // Calculate stats
   const allSets = workouts.flatMap((w) => w.sets);
@@ -129,6 +136,47 @@ export default async function MetricsPage() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </section>
+      )}
+
+      {/* Body Weight Trend */}
+      {bodyWeights.length > 0 && (
+        <section className="mb-8">
+          <h2 className="text-xl font-bold mb-4">Body Weight</h2>
+          <BodyWeightChart
+            entries={bodyWeights.map(bw => ({
+              id: bw.id,
+              weight: bw.weight,
+              unit: bw.unit,
+              recordedAt: bw.recordedAt.toISOString(),
+            }))}
+          />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+            <StatCard
+              value={bodyWeights[0]?.weight || "—"}
+              label="Current"
+            />
+            <StatCard
+              value={(() => {
+                if (bodyWeights.length < 2) return "—";
+                const now = new Date();
+                const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                const older = bodyWeights.find(bw => new Date(bw.recordedAt) <= weekAgo) || bodyWeights[bodyWeights.length - 1];
+                const change = bodyWeights[0].weight - older.weight;
+                const sign = change >= 0 ? "+" : "";
+                return `${sign}${change.toFixed(1)}`;
+              })()}
+              label="7-Day Change"
+            />
+            <StatCard
+              value={Math.min(...bodyWeights.map(bw => bw.weight)).toFixed(1)}
+              label="Min"
+            />
+            <StatCard
+              value={Math.max(...bodyWeights.map(bw => bw.weight)).toFixed(1)}
+              label="Max"
+            />
           </div>
         </section>
       )}
