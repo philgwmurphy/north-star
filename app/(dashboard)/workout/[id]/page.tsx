@@ -38,6 +38,7 @@ interface UserData {
 interface InlineFormState {
   weight: string;
   reps: string;
+  rpe: string;
 }
 
 export default function ActiveWorkoutPage() {
@@ -56,13 +57,13 @@ export default function ActiveWorkoutPage() {
 
   // Add exercise form (for custom workouts and program custom exercises)
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newExercise, setNewExercise] = useState({ name: "", weight: "", reps: "" });
+  const [newExercise, setNewExercise] = useState({ name: "", weight: "", reps: "", rpe: "" });
   const [cardioEntry, setCardioEntry] = useState({ name: "", hours: "", minutes: "" });
 
   // Edit mode for logged sets
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
   const [editingSetIsCardio, setEditingSetIsCardio] = useState(false);
-  const [editForm, setEditForm] = useState<{ weight: string; reps: string }>({ weight: "", reps: "" });
+  const [editForm, setEditForm] = useState<{ weight: string; reps: string; rpe: string }>({ weight: "", reps: "", rpe: "" });
   const [editDuration, setEditDuration] = useState<{ hours: string; minutes: string }>({
     hours: "",
     minutes: "",
@@ -143,7 +144,7 @@ export default function ActiveWorkoutPage() {
     return parsed;
   };
 
-  const handleInlineChange = (key: string, field: "weight" | "reps", value: string) => {
+  const handleInlineChange = (key: string, field: "weight" | "reps" | "rpe", value: string) => {
     setInlineForms(prev => ({
       ...prev,
       [key]: { ...prev[key], [field]: value }
@@ -156,6 +157,7 @@ export default function ActiveWorkoutPage() {
 
     const weight = resolveWeight(form.weight, targetWeight);
     const reps = resolveReps(form.reps, targetReps);
+    const rpe = form.rpe ? Number(form.rpe) : undefined;
 
     if (weight === null || reps === null) return;
 
@@ -171,6 +173,7 @@ export default function ActiveWorkoutPage() {
           weight,
           reps,
           setNumber: existingSets + 1,
+          ...(rpe !== undefined && Number.isFinite(rpe) && { rpe }),
         }),
       });
 
@@ -196,6 +199,7 @@ export default function ActiveWorkoutPage() {
 
     const weight = Number(newExercise.weight);
     const reps = Number(newExercise.reps);
+    const rpe = newExercise.rpe ? Number(newExercise.rpe) : undefined;
     if (!Number.isFinite(weight) || !Number.isFinite(reps) || reps <= 0) return;
 
     setSavingSet("add-exercise");
@@ -210,6 +214,7 @@ export default function ActiveWorkoutPage() {
           weight,
           reps,
           setNumber: existingSets + 1,
+          ...(rpe !== undefined && Number.isFinite(rpe) && { rpe }),
         }),
       });
 
@@ -217,7 +222,7 @@ export default function ActiveWorkoutPage() {
         const newSet = await response.json();
         setWorkout(prev => prev ? { ...prev, sets: [...prev.sets, newSet] } : prev);
         // Clear the form for adding a different exercise
-        setNewExercise({ name: "", weight: "", reps: "" });
+        setNewExercise({ name: "", weight: "", reps: "", rpe: "" });
       }
     } catch (error) {
       console.error("Failed to log set:", error);
@@ -287,24 +292,25 @@ export default function ActiveWorkoutPage() {
         hours: hours > 0 ? String(hours) : "",
         minutes: minutes > 0 ? String(minutes) : "",
       });
-      setEditForm({ weight: "", reps: "" });
+      setEditForm({ weight: "", reps: "", rpe: "" });
       return;
     }
 
     setEditingSetIsCardio(false);
-    setEditForm({ weight: String(set.weight), reps: String(set.reps) });
+    setEditForm({ weight: String(set.weight), reps: String(set.reps), rpe: set.rpe ? String(set.rpe) : "" });
   };
 
   const cancelEditing = () => {
     setEditingSetId(null);
     setEditingSetIsCardio(false);
-    setEditForm({ weight: "", reps: "" });
+    setEditForm({ weight: "", reps: "", rpe: "" });
     setEditDuration({ hours: "", minutes: "" });
   };
 
   const handleUpdateSet = async (setId: string) => {
     const weight = Number(editForm.weight);
     const reps = Number(editForm.reps);
+    const rpe = editForm.rpe ? Number(editForm.rpe) : null;
     if (!Number.isFinite(weight) || !Number.isFinite(reps) || reps <= 0) return;
 
     setSavingSet(`edit-${setId}`);
@@ -312,7 +318,7 @@ export default function ActiveWorkoutPage() {
       const response = await fetch(`/api/workouts/${workoutId}/sets/${setId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ weight, reps }),
+        body: JSON.stringify({ weight, reps, rpe }),
       });
 
       if (response.ok) {
@@ -480,6 +486,16 @@ export default function ActiveWorkoutPage() {
                 value={editForm.reps}
                 onChange={(e) => setEditForm(prev => ({ ...prev, reps: e.target.value }))}
               />
+              <span className="text-[var(--text-muted)] shrink-0">@</span>
+              <input
+                type="number"
+                placeholder="RPE"
+                min="1"
+                max="10"
+                className="w-16 sm:w-20 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                value={editForm.rpe}
+                onChange={(e) => setEditForm(prev => ({ ...prev, rpe: e.target.value }))}
+              />
               <Button
                 size="sm"
                 onClick={() => handleUpdateSet(set.id)}
@@ -505,7 +521,7 @@ export default function ActiveWorkoutPage() {
           <span className="font-[family-name:var(--font-geist-mono)] text-[var(--accent-success)] flex-1">
             {set.durationSeconds
               ? `Duration: ${formatDurationSeconds(set.durationSeconds)}`
-              : `${set.weight} x ${set.reps}`}
+              : `${set.weight} x ${set.reps}${set.rpe ? ` @${set.rpe}` : ''}`}
           </span>
           <button
             onClick={() => startEditingSet(set)}
@@ -540,6 +556,16 @@ export default function ActiveWorkoutPage() {
             className="w-20 sm:w-24 shrink-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
             value={inlineForms[formKey]?.reps || ""}
             onChange={(e) => handleInlineChange(formKey, "reps", e.target.value)}
+          />
+          <span className="text-[var(--text-muted)] shrink-0">@</span>
+          <input
+            type="number"
+            placeholder="RPE"
+            min="1"
+            max="10"
+            className="w-16 sm:w-20 shrink-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+            value={inlineForms[formKey]?.rpe || ""}
+            onChange={(e) => handleInlineChange(formKey, "rpe", e.target.value)}
           />
         </div>
         <Button
@@ -651,6 +677,16 @@ export default function ActiveWorkoutPage() {
                     value={newExercise.reps}
                     onChange={(e) => setNewExercise(prev => ({ ...prev, reps: e.target.value }))}
                   />
+                  <span className="text-[var(--text-muted)]">@</span>
+                  <input
+                    type="number"
+                    placeholder="RPE"
+                    min="1"
+                    max="10"
+                    className="w-16 sm:w-20 shrink-0 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                    value={newExercise.rpe}
+                    onChange={(e) => setNewExercise(prev => ({ ...prev, rpe: e.target.value }))}
+                  />
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -664,7 +700,7 @@ export default function ActiveWorkoutPage() {
                   {showAddForm && Object.keys(setsByExercise).length > 0 && (
                     <Button variant="ghost" onClick={() => {
                       setShowAddForm(false);
-                      setNewExercise({ name: "", weight: "", reps: "" });
+                      setNewExercise({ name: "", weight: "", reps: "", rpe: "" });
                     }}>
                       Cancel
                     </Button>
@@ -775,6 +811,16 @@ export default function ActiveWorkoutPage() {
                                   value={editForm.reps}
                                   onChange={(e) => setEditForm(prev => ({ ...prev, reps: e.target.value }))}
                                 />
+                                <span className="text-[var(--text-muted)] shrink-0">@</span>
+                                <input
+                                  type="number"
+                                  placeholder="RPE"
+                                  min="1"
+                                  max="10"
+                                  className="w-16 sm:w-20 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                                  value={editForm.rpe}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, rpe: e.target.value }))}
+                                />
                                 <Button
                                   size="sm"
                                   onClick={() => handleUpdateSet(completedSet.id)}
@@ -799,7 +845,7 @@ export default function ActiveWorkoutPage() {
                               <span className="font-[family-name:var(--font-geist-mono)] text-[var(--accent-success)] flex-1">
                                 {completedSet.durationSeconds
                                   ? `Duration: ${formatDurationSeconds(completedSet.durationSeconds)}`
-                                  : `${completedSet.weight} x ${completedSet.reps}`}
+                                  : `${completedSet.weight} x ${completedSet.reps}${completedSet.rpe ? ` @${completedSet.rpe}` : ''}`}
                               </span>
                               <button
                                 onClick={() => startEditingSet(completedSet)}
@@ -833,6 +879,16 @@ export default function ActiveWorkoutPage() {
                                 className="w-20 sm:w-24 shrink-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                                 value={form.reps || ""}
                                 onChange={(e) => handleInlineChange(formKey, "reps", e.target.value)}
+                              />
+                              <span className="text-[var(--text-muted)] shrink-0">@</span>
+                              <input
+                                type="number"
+                                placeholder="RPE"
+                                min="1"
+                                max="10"
+                                className="w-16 sm:w-20 shrink-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                                value={form.rpe || ""}
+                                onChange={(e) => handleInlineChange(formKey, "rpe", e.target.value)}
                               />
                             </div>
                             <Button
@@ -890,6 +946,16 @@ export default function ActiveWorkoutPage() {
                     value={newExercise.reps}
                     onChange={(e) => setNewExercise(prev => ({ ...prev, reps: e.target.value }))}
                   />
+                  <span className="text-[var(--text-muted)]">@</span>
+                  <input
+                    type="number"
+                    placeholder="RPE"
+                    min="1"
+                    max="10"
+                    className="w-16 sm:w-20 shrink-0 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                    value={newExercise.rpe}
+                    onChange={(e) => setNewExercise(prev => ({ ...prev, rpe: e.target.value }))}
+                  />
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -902,7 +968,7 @@ export default function ActiveWorkoutPage() {
                   </Button>
                   <Button variant="ghost" onClick={() => {
                     setShowAddForm(false);
-                    setNewExercise({ name: "", weight: "", reps: "" });
+                    setNewExercise({ name: "", weight: "", reps: "", rpe: "" });
                   }}>
                     Cancel
                   </Button>
