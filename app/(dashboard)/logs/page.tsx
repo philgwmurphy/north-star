@@ -1,9 +1,11 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatRelativeTime, formatLargeNumber } from "@/lib/utils";
 import { DeleteWorkoutButton } from "@/components/workout/delete-workout-button";
+import { ChevronRight } from "lucide-react";
 
 async function getWorkouts(userId: string) {
   return await prisma.workout.findMany({
@@ -70,11 +72,11 @@ export default async function LogsPage() {
                       </div>
                     </div>
 
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
+                    {/* Content - Clickable Link */}
+                    <Link href={`/logs/${workout.id}`} className="flex-1 min-w-0 group">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <h3 className="font-bold text-lg">
+                          <h3 className="font-bold text-lg group-hover:text-[var(--text-muted)] transition-colors">
                             {workout.programDay || "Custom Workout"}
                           </h3>
                           <p className="text-sm text-[var(--text-muted)]">
@@ -119,10 +121,18 @@ export default async function LogsPage() {
                           )}
                         </div>
                       )}
-                    </div>
+                    </Link>
 
-                    {/* Delete button */}
-                    <DeleteWorkoutButton workoutId={workout.id} />
+                    {/* Actions */}
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/logs/${workout.id}`}
+                        className="p-2 text-[var(--text-muted)] hover:text-white transition-colors"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </Link>
+                      <DeleteWorkoutButton workoutId={workout.id} />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
