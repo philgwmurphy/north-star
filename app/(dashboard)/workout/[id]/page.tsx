@@ -5,7 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { programs, type RepMaxes, type WorkoutSet as ProgramSet } from "@/lib/programs";
 import { formatDuration } from "@/lib/utils";
-import { Check, Clock, Plus, Trash2 } from "lucide-react";
+import { Check, Clock, Plus, Trash2, Pencil, X } from "lucide-react";
 import { ExerciseAutocomplete } from "@/components/ui/exercise-autocomplete";
 
 interface WorkoutSet {
@@ -66,6 +66,10 @@ export default function ActiveWorkoutPage() {
 
   // Planned exercises for custom workouts
   const [plannedExercises, setPlannedExercises] = useState<PlannedExercise[]>([]);
+
+  // Edit mode for logged sets
+  const [editingSetId, setEditingSetId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<{ weight: string; reps: string }>({ weight: "", reps: "" });
 
   // Fetch workout and user data
   useEffect(() => {
@@ -250,6 +254,66 @@ export default function ActiveWorkoutPage() {
     }
   };
 
+  const startEditingSet = (set: WorkoutSet) => {
+    setEditingSetId(set.id);
+    setEditForm({ weight: String(set.weight), reps: String(set.reps) });
+  };
+
+  const cancelEditing = () => {
+    setEditingSetId(null);
+    setEditForm({ weight: "", reps: "" });
+  };
+
+  const handleUpdateSet = async (setId: string) => {
+    const weight = Number(editForm.weight);
+    const reps = Number(editForm.reps);
+    if (!Number.isFinite(weight) || !Number.isFinite(reps) || reps <= 0) return;
+
+    setSavingSet(`edit-${setId}`);
+    try {
+      const response = await fetch(`/api/workouts/${workoutId}/sets/${setId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ weight, reps }),
+      });
+
+      if (response.ok) {
+        const updatedSet = await response.json();
+        setWorkout(prev => prev ? {
+          ...prev,
+          sets: prev.sets.map(s => s.id === setId ? updatedSet : s)
+        } : prev);
+        cancelEditing();
+      }
+    } catch (error) {
+      console.error("Failed to update set:", error);
+    } finally {
+      setSavingSet(null);
+    }
+  };
+
+  const handleDeleteSet = async (setId: string) => {
+    if (!confirm("Delete this set?")) return;
+
+    setSavingSet(`delete-${setId}`);
+    try {
+      const response = await fetch(`/api/workouts/${workoutId}/sets/${setId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setWorkout(prev => prev ? {
+          ...prev,
+          sets: prev.sets.filter(s => s.id !== setId)
+        } : prev);
+      }
+    } catch (error) {
+      console.error("Failed to delete set:", error);
+    } finally {
+      setSavingSet(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -402,12 +466,62 @@ export default function ActiveWorkoutPage() {
               <div className="divide-y divide-[var(--border-subtle)]">
                 {/* Show completed sets */}
                 {completedSets.map((set, idx) => (
-                  <div key={set.id} className="flex items-center justify-between px-4 py-3 bg-[var(--bg-elevated)]">
-                    <span className="text-[var(--text-muted)] w-16">Set {idx + 1}</span>
-                    <span className="font-[family-name:var(--font-geist-mono)] text-[var(--accent-success)]">
-                      {set.weight} x {set.reps}
-                    </span>
-                    <Check className="w-5 h-5 text-[var(--accent-success)]" />
+                  <div key={set.id} className="px-4 py-3 bg-[var(--bg-elevated)]">
+                    {editingSetId === set.id ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[var(--text-muted)] text-sm">Set {idx + 1}</span>
+                          <button onClick={cancelEditing} className="text-[var(--text-muted)] hover:text-white">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            className="w-20 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                            value={editForm.weight}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, weight: e.target.value }))}
+                          />
+                          <span className="text-[var(--text-muted)] shrink-0">x</span>
+                          <input
+                            type="number"
+                            className="w-16 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                            value={editForm.reps}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, reps: e.target.value }))}
+                          />
+                          <Button
+                            size="sm"
+                            onClick={() => handleUpdateSet(set.id)}
+                            loading={savingSet === `edit-${set.id}`}
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDeleteSet(set.id)}
+                            loading={savingSet === `delete-${set.id}`}
+                            className="text-[var(--accent-danger)]"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        <span className="text-[var(--text-muted)] w-16">Set {idx + 1}</span>
+                        <span className="font-[family-name:var(--font-geist-mono)] text-[var(--accent-success)] flex-1">
+                          {set.weight} x {set.reps}
+                        </span>
+                        <button
+                          onClick={() => startEditingSet(set)}
+                          className="text-[var(--text-muted)] hover:text-white p-1"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <Check className="w-5 h-5 text-[var(--accent-success)]" />
+                      </div>
+                    )}
                   </div>
                 ))}
                 {/* Show remaining sets to log */}
@@ -418,7 +532,7 @@ export default function ActiveWorkoutPage() {
                       <input
                         type="number"
                         placeholder={planned.weight || "Weight"}
-                        className="flex-1 min-w-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                        className="w-20 shrink-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                         value={inlineForms[getFormKey(planned.name, completedSets.length)]?.weight || ""}
                         onChange={(e) => handleInlineChange(getFormKey(planned.name, completedSets.length), "weight", e.target.value)}
                       />
@@ -495,12 +609,62 @@ export default function ActiveWorkoutPage() {
                   // For exercises with string format (e.g., "3x10"), show completed sets + add button
                   <>
                     {completedSets.map((set, idx) => (
-                      <div key={set.id} className="flex items-center justify-between px-4 py-3 bg-[var(--bg-elevated)]">
-                        <span className="text-[var(--text-muted)] w-16">Set {idx + 1}</span>
-                        <span className="font-[family-name:var(--font-geist-mono)] text-[var(--accent-success)]">
-                          {set.weight} x {set.reps}
-                        </span>
-                        <Check className="w-5 h-5 text-[var(--accent-success)]" />
+                      <div key={set.id} className="px-4 py-3 bg-[var(--bg-elevated)]">
+                        {editingSetId === set.id ? (
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[var(--text-muted)] text-sm">Set {idx + 1}</span>
+                              <button onClick={cancelEditing} className="text-[var(--text-muted)] hover:text-white">
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                className="w-20 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                                value={editForm.weight}
+                                onChange={(e) => setEditForm(prev => ({ ...prev, weight: e.target.value }))}
+                              />
+                              <span className="text-[var(--text-muted)] shrink-0">x</span>
+                              <input
+                                type="number"
+                                className="w-16 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                                value={editForm.reps}
+                                onChange={(e) => setEditForm(prev => ({ ...prev, reps: e.target.value }))}
+                              />
+                              <Button
+                                size="sm"
+                                onClick={() => handleUpdateSet(set.id)}
+                                loading={savingSet === `edit-${set.id}`}
+                              >
+                                Save
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleDeleteSet(set.id)}
+                                loading={savingSet === `delete-${set.id}`}
+                                className="text-[var(--accent-danger)]"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-3">
+                            <span className="text-[var(--text-muted)] w-16">Set {idx + 1}</span>
+                            <span className="font-[family-name:var(--font-geist-mono)] text-[var(--accent-success)] flex-1">
+                              {set.weight} x {set.reps}
+                            </span>
+                            <button
+                              onClick={() => startEditingSet(set)}
+                              className="text-[var(--text-muted)] hover:text-white p-1"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <Check className="w-5 h-5 text-[var(--accent-success)]" />
+                          </div>
+                        )}
                       </div>
                     ))}
                     <div className="px-4 py-3 space-y-3">
@@ -509,7 +673,7 @@ export default function ActiveWorkoutPage() {
                         <input
                           type="number"
                           placeholder="Weight"
-                          className="flex-1 min-w-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                          className="w-20 shrink-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                           value={inlineForms[getFormKey(exercise.name, completedSets.length)]?.weight || ""}
                           onChange={(e) => handleInlineChange(getFormKey(exercise.name, completedSets.length), "weight", e.target.value)}
                         />
@@ -553,13 +717,61 @@ export default function ActiveWorkoutPage() {
                         className={`px-4 py-3 ${isCompleted ? 'bg-[var(--bg-elevated)]' : ''}`}
                       >
                         {isCompleted ? (
-                          <div className="flex items-center gap-4">
-                            <span className="text-[var(--text-muted)] w-12 text-sm shrink-0">Set {setIdx + 1}</span>
-                            <span className="font-[family-name:var(--font-geist-mono)] text-[var(--accent-success)] flex-1">
-                              {completedSet.weight} x {completedSet.reps}
-                            </span>
-                            <Check className="w-5 h-5 text-[var(--accent-success)]" />
-                          </div>
+                          editingSetId === completedSet.id ? (
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[var(--text-muted)] text-sm">Set {setIdx + 1}</span>
+                                <button onClick={cancelEditing} className="text-[var(--text-muted)] hover:text-white">
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="number"
+                                  className="w-20 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                                  value={editForm.weight}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, weight: e.target.value }))}
+                                />
+                                <span className="text-[var(--text-muted)] shrink-0">x</span>
+                                <input
+                                  type="number"
+                                  className="w-16 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                                  value={editForm.reps}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, reps: e.target.value }))}
+                                />
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleUpdateSet(completedSet.id)}
+                                  loading={savingSet === `edit-${completedSet.id}`}
+                                >
+                                  Save
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDeleteSet(completedSet.id)}
+                                  loading={savingSet === `delete-${completedSet.id}`}
+                                  className="text-[var(--accent-danger)]"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-3">
+                              <span className="text-[var(--text-muted)] w-12 text-sm shrink-0">Set {setIdx + 1}</span>
+                              <span className="font-[family-name:var(--font-geist-mono)] text-[var(--accent-success)] flex-1">
+                                {completedSet.weight} x {completedSet.reps}
+                              </span>
+                              <button
+                                onClick={() => startEditingSet(completedSet)}
+                                className="text-[var(--text-muted)] hover:text-white p-1"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <Check className="w-5 h-5 text-[var(--accent-success)]" />
+                            </div>
+                          )
                         ) : (
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
@@ -572,7 +784,7 @@ export default function ActiveWorkoutPage() {
                               <input
                                 type="number"
                                 placeholder={String(targetSet.weight)}
-                                className="flex-1 min-w-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                                className="w-20 shrink-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                                 value={form.weight || ""}
                                 onChange={(e) => handleInlineChange(formKey, "weight", e.target.value)}
                               />
@@ -622,12 +834,62 @@ export default function ActiveWorkoutPage() {
                   </div>
                   <div className="divide-y divide-[var(--border-subtle)]">
                     {sets.map((set, idx) => (
-                      <div key={set.id} className="flex items-center justify-between px-4 py-3 bg-[var(--bg-elevated)]">
-                        <span className="text-[var(--text-muted)] w-16">Set {idx + 1}</span>
-                        <span className="font-[family-name:var(--font-geist-mono)] text-[var(--accent-success)]">
-                          {set.weight} x {set.reps}
-                        </span>
-                        <Check className="w-5 h-5 text-[var(--accent-success)]" />
+                      <div key={set.id} className="px-4 py-3 bg-[var(--bg-elevated)]">
+                        {editingSetId === set.id ? (
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[var(--text-muted)] text-sm">Set {idx + 1}</span>
+                              <button onClick={cancelEditing} className="text-[var(--text-muted)] hover:text-white">
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                className="w-20 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                                value={editForm.weight}
+                                onChange={(e) => setEditForm(prev => ({ ...prev, weight: e.target.value }))}
+                              />
+                              <span className="text-[var(--text-muted)] shrink-0">x</span>
+                              <input
+                                type="number"
+                                className="w-16 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                                value={editForm.reps}
+                                onChange={(e) => setEditForm(prev => ({ ...prev, reps: e.target.value }))}
+                              />
+                              <Button
+                                size="sm"
+                                onClick={() => handleUpdateSet(set.id)}
+                                loading={savingSet === `edit-${set.id}`}
+                              >
+                                Save
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleDeleteSet(set.id)}
+                                loading={savingSet === `delete-${set.id}`}
+                                className="text-[var(--accent-danger)]"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-3">
+                            <span className="text-[var(--text-muted)] w-16">Set {idx + 1}</span>
+                            <span className="font-[family-name:var(--font-geist-mono)] text-[var(--accent-success)] flex-1">
+                              {set.weight} x {set.reps}
+                            </span>
+                            <button
+                              onClick={() => startEditingSet(set)}
+                              className="text-[var(--text-muted)] hover:text-white p-1"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <Check className="w-5 h-5 text-[var(--accent-success)]" />
+                          </div>
+                        )}
                       </div>
                     ))}
                     {/* Allow adding more sets */}
@@ -637,7 +899,7 @@ export default function ActiveWorkoutPage() {
                         <input
                           type="number"
                           placeholder="Weight"
-                          className="flex-1 min-w-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                          className="w-20 shrink-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                           value={inlineForms[getFormKey(exerciseName, sets.length)]?.weight || ""}
                           onChange={(e) => handleInlineChange(getFormKey(exerciseName, sets.length), "weight", e.target.value)}
                         />
@@ -697,7 +959,7 @@ export default function ActiveWorkoutPage() {
                   <input
                     type="number"
                     placeholder="Weight"
-                    className="flex-1 min-w-0 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                    className="w-20 shrink-0 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                     value={customExercise.weight}
                     onChange={(e) => setCustomExercise(prev => ({ ...prev, weight: e.target.value }))}
                   />
@@ -733,12 +995,62 @@ export default function ActiveWorkoutPage() {
                 <div key={exerciseName} className="border-t border-[var(--border-subtle)]">
                   <div className="px-4 py-2 text-sm text-[var(--text-muted)]">{exerciseName}</div>
                   {sets.map((set, idx) => (
-                    <div key={set.id} className="flex items-center justify-between px-4 py-2 bg-[var(--bg-elevated)]">
-                      <span className="text-[var(--text-muted)] w-16">Set {idx + 1}</span>
-                      <span className="font-[family-name:var(--font-geist-mono)] text-[var(--accent-success)]">
-                        {set.weight} x {set.reps}
-                      </span>
-                      <Check className="w-5 h-5 text-[var(--accent-success)]" />
+                    <div key={set.id} className="px-4 py-2 bg-[var(--bg-elevated)]">
+                      {editingSetId === set.id ? (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[var(--text-muted)] text-sm">Set {idx + 1}</span>
+                            <button onClick={cancelEditing} className="text-[var(--text-muted)] hover:text-white">
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              className="w-20 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                              value={editForm.weight}
+                              onChange={(e) => setEditForm(prev => ({ ...prev, weight: e.target.value }))}
+                            />
+                            <span className="text-[var(--text-muted)] shrink-0">x</span>
+                            <input
+                              type="number"
+                              className="w-16 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                              value={editForm.reps}
+                              onChange={(e) => setEditForm(prev => ({ ...prev, reps: e.target.value }))}
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => handleUpdateSet(set.id)}
+                              loading={savingSet === `edit-${set.id}`}
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDeleteSet(set.id)}
+                              loading={savingSet === `delete-${set.id}`}
+                              className="text-[var(--accent-danger)]"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3">
+                          <span className="text-[var(--text-muted)] w-16">Set {idx + 1}</span>
+                          <span className="font-[family-name:var(--font-geist-mono)] text-[var(--accent-success)] flex-1">
+                            {set.weight} x {set.reps}
+                          </span>
+                          <button
+                            onClick={() => startEditingSet(set)}
+                            className="text-[var(--text-muted)] hover:text-white p-1"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <Check className="w-5 h-5 text-[var(--accent-success)]" />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
