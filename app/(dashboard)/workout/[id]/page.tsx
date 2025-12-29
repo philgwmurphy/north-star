@@ -507,14 +507,12 @@ export default function ActiveWorkoutPage() {
               ? `Duration: ${formatDurationSeconds(set.durationSeconds)}`
               : `${set.weight} x ${set.reps}`}
           </span>
-          {!set.durationSeconds && (
-            <button
-              onClick={() => startEditingSet(set)}
-              className="text-[var(--text-muted)] hover:text-white p-1"
-            >
-              <Pencil className="w-4 h-4" />
-            </button>
-          )}
+          <button
+            onClick={() => startEditingSet(set)}
+            className="text-[var(--text-muted)] hover:text-white p-1"
+          >
+            <Pencil className="w-4 h-4" />
+          </button>
           <Check className="w-5 h-5 text-[var(--accent-success)]" />
         </div>
       )}
@@ -803,14 +801,12 @@ export default function ActiveWorkoutPage() {
                                   ? `Duration: ${formatDurationSeconds(completedSet.durationSeconds)}`
                                   : `${completedSet.weight} x ${completedSet.reps}`}
                               </span>
-                              {!completedSet.durationSeconds && (
-                                <button
-                                  onClick={() => startEditingSet(completedSet)}
-                                  className="text-[var(--text-muted)] hover:text-white p-1"
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                </button>
-                              )}
+                              <button
+                                onClick={() => startEditingSet(completedSet)}
+                                className="text-[var(--text-muted)] hover:text-white p-1"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
                               <Check className="w-5 h-5 text-[var(--accent-success)]" />
                             </div>
                           )
