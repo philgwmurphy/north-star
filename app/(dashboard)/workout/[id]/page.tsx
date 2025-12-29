@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { programs, type RepMaxes, type WorkoutSet as ProgramSet } from "@/lib/programs";
-import { formatDuration } from "@/lib/utils";
+import { formatDuration, formatDurationSeconds } from "@/lib/utils";
 import { Check, Clock, Plus, Trash2, Pencil, X } from "lucide-react";
 import { ExerciseAutocomplete } from "@/components/ui/exercise-autocomplete";
 
@@ -13,6 +13,7 @@ interface WorkoutSet {
   exercise: string;
   weight: number;
   reps: number;
+  durationSeconds?: number | null;
   setNumber: number;
   rpe?: number;
   isWarmup: boolean;
@@ -55,6 +56,7 @@ export default function ActiveWorkoutPage() {
   // Add exercise form (for custom workouts and program custom exercises)
   const [showAddForm, setShowAddForm] = useState(false);
   const [newExercise, setNewExercise] = useState({ name: "", weight: "", reps: "" });
+  const [cardioEntry, setCardioEntry] = useState({ name: "", hours: "", minutes: "" });
 
   // Edit mode for logged sets
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
@@ -218,6 +220,42 @@ export default function ActiveWorkoutPage() {
     }
   };
 
+  const handleLogCardio = async () => {
+    if (!cardioEntry.name) return;
+    const hours = Number(cardioEntry.hours || 0);
+    const minutes = Number(cardioEntry.minutes || 0);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return;
+
+    const durationSeconds = Math.round((hours * 60 + minutes) * 60);
+    if (durationSeconds <= 0) return;
+
+    setSavingSet("cardio");
+    try {
+      const existingSets = workout?.sets.filter(s => s.exercise === cardioEntry.name).length || 0;
+      const response = await fetch(`/api/workouts/${workoutId}/sets`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          exercise: cardioEntry.name,
+          weight: 0,
+          reps: 0,
+          durationSeconds,
+          setNumber: existingSets + 1,
+        }),
+      });
+
+      if (response.ok) {
+        const newSet = await response.json();
+        setWorkout(prev => prev ? { ...prev, sets: [...prev.sets, newSet] } : prev);
+        setCardioEntry({ name: "", hours: "", minutes: "" });
+      }
+    } catch (error) {
+      console.error("Failed to log cardio:", error);
+    } finally {
+      setSavingSet(null);
+    }
+  };
+
   const handleFinishWorkout = async () => {
     try {
       const response = await fetch(`/api/workouts/${workoutId}`, {
@@ -328,7 +366,7 @@ export default function ActiveWorkoutPage() {
   // Render a set row with edit capability
   const renderSetRow = (set: WorkoutSet, idx: number) => (
     <div key={set.id} className="px-4 py-3 bg-[var(--bg-elevated)]">
-      {editingSetId === set.id ? (
+      {editingSetId === set.id && !set.durationSeconds ? (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-[var(--text-muted)] text-sm">Set {idx + 1}</span>
@@ -372,14 +410,18 @@ export default function ActiveWorkoutPage() {
         <div className="flex items-center gap-3">
           <span className="text-[var(--text-muted)] w-16">Set {idx + 1}</span>
           <span className="font-[family-name:var(--font-geist-mono)] text-[var(--accent-success)] flex-1">
-            {set.weight} x {set.reps}
+            {set.durationSeconds
+              ? `Duration: ${formatDurationSeconds(set.durationSeconds)}`
+              : `${set.weight} x ${set.reps}`}
           </span>
-          <button
-            onClick={() => startEditingSet(set)}
-            className="text-[var(--text-muted)] hover:text-white p-1"
-          >
-            <Pencil className="w-4 h-4" />
-          </button>
+          {!set.durationSeconds && (
+            <button
+              onClick={() => startEditingSet(set)}
+              className="text-[var(--text-muted)] hover:text-white p-1"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+          )}
           <Check className="w-5 h-5 text-[var(--accent-success)]" />
         </div>
       )}
@@ -539,6 +581,47 @@ export default function ActiveWorkoutPage() {
           </div>
         )}
 
+        {/* Cardio Entry */}
+        <div className="border border-[var(--border-subtle)]">
+          <div className="bg-[var(--bg-surface)] px-4 py-3 border-b border-[var(--border-subtle)]">
+            <h3 className="font-bold">Cardio</h3>
+            <p className="text-sm text-[var(--text-muted)]">Log cardio by duration</p>
+          </div>
+          <div className="px-4 py-4 space-y-3">
+            <ExerciseAutocomplete
+              value={cardioEntry.name}
+              onChange={(name) => setCardioEntry(prev => ({ ...prev, name }))}
+              placeholder="Search cardio exercise..."
+            />
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                placeholder="Hours"
+                className="w-24 sm:w-28 shrink-0 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                value={cardioEntry.hours}
+                onChange={(e) => setCardioEntry(prev => ({ ...prev, hours: e.target.value }))}
+              />
+              <span className="text-[var(--text-muted)]">h</span>
+              <input
+                type="number"
+                placeholder="Minutes"
+                className="w-24 sm:w-28 shrink-0 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                value={cardioEntry.minutes}
+                onChange={(e) => setCardioEntry(prev => ({ ...prev, minutes: e.target.value }))}
+              />
+              <span className="text-[var(--text-muted)]">m</span>
+            </div>
+            <Button
+              className="w-full"
+              onClick={handleLogCardio}
+              loading={savingSet === "cardio"}
+              disabled={!cardioEntry.name || (!cardioEntry.hours && !cardioEntry.minutes)}
+            >
+              Log Cardio
+            </Button>
+          </div>
+        </div>
+
         {/* Program Workout: Show program exercises */}
         {!isCustomWorkout && programExercises.map((exercise, exIdx) => {
           const completedSets = setsByExercise[exercise.name] || [];
@@ -619,14 +702,18 @@ export default function ActiveWorkoutPage() {
                             <div className="flex items-center gap-3">
                               <span className="text-[var(--text-muted)] w-12 text-sm shrink-0">Set {setIdx + 1}</span>
                               <span className="font-[family-name:var(--font-geist-mono)] text-[var(--accent-success)] flex-1">
-                                {completedSet.weight} x {completedSet.reps}
+                                {completedSet.durationSeconds
+                                  ? `Duration: ${formatDurationSeconds(completedSet.durationSeconds)}`
+                                  : `${completedSet.weight} x ${completedSet.reps}`}
                               </span>
-                              <button
-                                onClick={() => startEditingSet(completedSet)}
-                                className="text-[var(--text-muted)] hover:text-white p-1"
-                              >
-                                <Pencil className="w-4 h-4" />
-                              </button>
+                              {!completedSet.durationSeconds && (
+                                <button
+                                  onClick={() => startEditingSet(completedSet)}
+                                  className="text-[var(--text-muted)] hover:text-white p-1"
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </button>
+                              )}
                               <Check className="w-5 h-5 text-[var(--accent-success)]" />
                             </div>
                           )

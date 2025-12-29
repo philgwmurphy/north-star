@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { formatDuration } from "@/lib/utils";
+import { formatDuration, formatDurationSeconds } from "@/lib/utils";
 import { ArrowLeft, Clock, Dumbbell, Calendar } from "lucide-react";
 
 interface WorkoutSet {
@@ -10,6 +10,7 @@ interface WorkoutSet {
   exercise: string;
   weight: number;
   reps: number;
+  durationSeconds?: number | null;
   setNumber: number;
   rpe: number | null;
   isWarmup: boolean;
@@ -172,7 +173,9 @@ export default async function WorkoutDetailPage({
                       Set {idx + 1}
                     </span>
                     <span className="font-[family-name:var(--font-geist-mono)] text-lg">
-                      {set.weight} x {set.reps}
+                      {set.durationSeconds
+                        ? `Duration: ${formatDurationSeconds(set.durationSeconds)}`
+                        : `${set.weight} x ${set.reps}`}
                     </span>
                     {set.rpe && (
                       <span className="text-sm text-[var(--text-muted)]">
