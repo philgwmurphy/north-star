@@ -1,18 +1,35 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import dynamic from "next/dynamic";
 import { prisma } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatCard } from "@/components/workout/stat-card";
-import { BodyWeightChart } from "@/components/body-weight/trend-chart";
 import { formatLargeNumber } from "@/lib/utils";
 
+const BodyWeightChart = dynamic(
+  () => import("@/components/body-weight/trend-chart").then((mod) => mod.BodyWeightChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-64 bg-[var(--bg-surface)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--text-muted)]">
+        Loading chart...
+      </div>
+    ),
+  }
+);
+
 async function getMetrics(userId: string) {
-  const [workouts, repMaxes, bodyWeights] = await Promise.all([
-    prisma.workout.findMany({
-      where: { userId },
-      include: {
-        sets: true,
+  const [sets, workoutCount, repMaxes, bodyWeights] = await Promise.all([
+    prisma.workoutSet.findMany({
+      where: { workout: { userId } },
+      select: {
+        exercise: true,
+        weight: true,
+        reps: true,
       },
+    }),
+    prisma.workout.count({
+      where: { userId },
     }),
     prisma.repMax.findMany({
       where: { userId },
@@ -24,7 +41,7 @@ async function getMetrics(userId: string) {
     }),
   ]);
 
-  return { workouts, repMaxes, bodyWeights };
+  return { sets, workoutCount, repMaxes, bodyWeights };
 }
 
 export default async function MetricsPage() {
@@ -34,41 +51,45 @@ export default async function MetricsPage() {
     redirect("/sign-in");
   }
 
-  const { workouts, repMaxes, bodyWeights } = await getMetrics(userId);
+  const { sets, workoutCount, repMaxes, bodyWeights } = await getMetrics(userId);
 
   // Calculate stats
-  const allSets = workouts.flatMap((w) => w.sets);
-  const totalVolume = allSets.reduce((sum, set) => sum + set.weight * set.reps, 0);
-  const totalSets = allSets.length;
-  const uniqueExercises = [...new Set(allSets.map((s) => s.exercise))];
+  const totalVolume = sets.reduce((sum, set) => sum + set.weight * set.reps, 0);
+  const totalSets = sets.length;
+  const exerciseStatsMap = new Map<
+    string,
+    { maxWeight: number; totalWeight: number; totalReps: number; totalVolume: number; setCount: number }
+  >();
 
-  // Group sets by exercise
-  const exerciseStats = uniqueExercises.map((exercise) => {
-    const exerciseSets = allSets.filter((s) => s.exercise === exercise);
-    const maxWeight = Math.max(...exerciseSets.map((s) => s.weight));
-    const avgWeight = Math.round(
-      exerciseSets.reduce((sum, s) => sum + s.weight, 0) / exerciseSets.length
-    );
-    const totalReps = exerciseSets.reduce((sum, s) => sum + s.reps, 0);
-    const exerciseVolume = exerciseSets.reduce(
-      (sum, s) => sum + s.weight * s.reps,
-      0
-    );
-
-    return {
-      name: exercise,
-      maxWeight,
-      avgWeight,
-      totalReps,
-      totalVolume: exerciseVolume,
-      setCount: exerciseSets.length,
+  for (const set of sets) {
+    const existing = exerciseStatsMap.get(set.exercise) || {
+      maxWeight: 0,
+      totalWeight: 0,
+      totalReps: 0,
+      totalVolume: 0,
+      setCount: 0,
     };
-  });
+    existing.maxWeight = Math.max(existing.maxWeight, set.weight);
+    existing.totalWeight += set.weight;
+    existing.totalReps += set.reps;
+    existing.totalVolume += set.weight * set.reps;
+    existing.setCount += 1;
+    exerciseStatsMap.set(set.exercise, existing);
+  }
+
+  const exerciseStats = Array.from(exerciseStatsMap.entries()).map(([exercise, stats]) => ({
+    name: exercise,
+    maxWeight: stats.maxWeight,
+    avgWeight: Math.round(stats.totalWeight / stats.setCount),
+    totalReps: stats.totalReps,
+    totalVolume: stats.totalVolume,
+    setCount: stats.setCount,
+  }));
 
   // Sort by volume
   exerciseStats.sort((a, b) => b.totalVolume - a.totalVolume);
 
-  if (allSets.length === 0) {
+  if (sets.length === 0) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="font-[family-name:var(--font-bebas-neue)] text-4xl tracking-wider mb-2">
@@ -101,7 +122,7 @@ export default async function MetricsPage() {
       {/* Overview Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <StatCard
-          value={workouts.length}
+          value={workoutCount}
           label="Workouts"
         />
         <StatCard
@@ -113,7 +134,7 @@ export default async function MetricsPage() {
           label="Total Sets"
         />
         <StatCard
-          value={uniqueExercises.length}
+          value={exerciseStats.length}
           label="Exercises"
         />
       </div>

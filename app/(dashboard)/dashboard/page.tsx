@@ -9,27 +9,46 @@ import { programs, type RepMaxes } from "@/lib/programs";
 import { formatDuration, formatRelativeTime } from "@/lib/utils";
 
 async function getUserData(userId: string) {
-  const user = await prisma.user.findUnique({
+  return await prisma.user.findUnique({
     where: { id: userId },
-    include: {
-      repMaxes: true,
+    select: {
+      selectedProgram: true,
+      currentWeek: true,
+      repMaxes: {
+        select: {
+          exercise: true,
+          oneRM: true,
+        },
+      },
       workouts: {
         orderBy: { startedAt: "desc" },
         take: 5,
-        include: {
-          sets: true,
+        select: {
+          id: true,
+          programDay: true,
+          startedAt: true,
+          completedAt: true,
+          _count: { select: { sets: true } },
         },
       },
-      settings: true,
+      settings: {
+        select: {
+          weightUnit: true,
+        },
+      },
     },
   });
-  return user;
 }
 
 async function getLatestBodyWeight(userId: string) {
   return await prisma.bodyWeight.findFirst({
     where: { userId },
     orderBy: { recordedAt: "desc" },
+    select: {
+      weight: true,
+      unit: true,
+      recordedAt: true,
+    },
   });
 }
 
@@ -39,10 +58,14 @@ async function getActiveWorkout(userId: string) {
       userId,
       completedAt: null,
     },
-    include: {
-      sets: true,
-    },
     orderBy: { startedAt: "desc" },
+    select: {
+      id: true,
+      programKey: true,
+      programDay: true,
+      startedAt: true,
+      _count: { select: { sets: true } },
+    },
   });
 }
 
@@ -53,9 +76,11 @@ export default async function HomePage() {
     redirect("/sign-in");
   }
 
-  const user = await getUserData(userId);
-  const activeWorkout = await getActiveWorkout(userId);
-  const latestBodyWeight = await getLatestBodyWeight(userId);
+  const [user, activeWorkout, latestBodyWeight] = await Promise.all([
+    getUserData(userId),
+    getActiveWorkout(userId),
+    getLatestBodyWeight(userId),
+  ]);
 
   // Convert rep maxes array to object
   const repMaxes: RepMaxes | null = user?.repMaxes.length === 4
@@ -97,7 +122,7 @@ export default async function HomePage() {
                   </p>
                 )}
                 <p className="text-[var(--text-muted)] text-sm">
-                  {activeWorkout.sets.length} sets completed &bull; {formatDuration(activeWorkout.startedAt)}
+                  {activeWorkout._count.sets} sets completed &bull; {formatDuration(activeWorkout.startedAt)}
                 </p>
                 <div className="mt-4 flex items-center gap-2 text-white font-semibold text-sm uppercase tracking-wider">
                   Continue Workout <ArrowRight className="w-4 h-4" />
@@ -175,7 +200,7 @@ export default async function HomePage() {
                     {workout.programDay || "Custom Workout"}
                   </h3>
                   <p className="text-sm text-[var(--text-muted)]">
-                    {workout.sets.length} sets &bull; {formatRelativeTime(workout.startedAt)}
+                    {workout._count.sets} sets &bull; {formatRelativeTime(workout.startedAt)}
                   </p>
                 </div>
                 <span className="text-xs text-[var(--accent-success)] border border-[var(--accent-success)] px-2 py-1">

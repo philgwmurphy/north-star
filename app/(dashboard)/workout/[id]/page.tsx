@@ -521,7 +521,7 @@ export default function ActiveWorkoutPage() {
           <span className="font-[family-name:var(--font-geist-mono)] text-[var(--accent-success)] flex-1">
             {set.durationSeconds
               ? `Duration: ${formatDurationSeconds(set.durationSeconds)}`
-              : `${set.weight} x ${set.reps}${set.rpe ? ` @${set.rpe}` : ''}`}
+              : `${set.weight} lbs x ${set.reps}${set.rpe ? ` @${set.rpe}` : ""}`}
           </span>
           <button
             onClick={() => startEditingSet(set)}
@@ -544,7 +544,7 @@ export default function ActiveWorkoutPage() {
         <div className="flex items-center gap-2">
           <input
             type="number"
-            placeholder={placeholder?.weight || "Weight"}
+            placeholder={placeholder?.weight || "Weight (lbs)"}
             className="w-24 sm:w-28 shrink-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
             value={inlineForms[formKey]?.weight || ""}
             onChange={(e) => handleInlineChange(formKey, "weight", e.target.value)}
@@ -606,19 +606,19 @@ export default function ActiveWorkoutPage() {
           <h1 className="font-[family-name:var(--font-bebas-neue)] text-3xl tracking-wide">
             {workout.programDay || "WORKOUT"}
           </h1>
-          <div className="flex items-center gap-4 text-[var(--text-muted)] text-sm mt-1">
-            <span className="flex items-center gap-1">
-              <Clock className="w-4 h-4" />
-              {elapsedTime}
-            </span>
-            <span>{workout.sets.length} sets logged</span>
-            {totalCardioSeconds > 0 && (
-              <span>{formatDurationSeconds(totalCardioSeconds)} cardio</span>
-            )}
-          </div>
-          <p className="text-[var(--text-muted)] text-xs mt-2">
-            Bodyweight movements: log 0 for bodyweight, add extra load only.
-          </p>
+      <div className="flex items-center gap-4 text-[var(--text-muted)] text-sm mt-1">
+        <span className="flex items-center gap-1">
+          <Clock className="w-4 h-4" />
+          {elapsedTime}
+        </span>
+        <span>{workout.sets.length} sets logged</span>
+        {totalCardioSeconds > 0 && (
+          <span>{formatDurationSeconds(totalCardioSeconds)} cardio</span>
+        )}
+      </div>
+      <p className="text-[var(--text-muted)] text-xs mt-2">
+        All weights are in lbs. Bodyweight movements: log 0 for bodyweight, add extra load only.
+      </p>
         </div>
         <Button onClick={handleFinishWorkout}>
           <Check className="w-4 h-4 mr-2" />
@@ -664,7 +664,7 @@ export default function ActiveWorkoutPage() {
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
-                    placeholder="Weight"
+                    placeholder="Weight (lbs)"
                     className="w-24 sm:w-28 shrink-0 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                     value={newExercise.weight}
                     onChange={(e) => setNewExercise(prev => ({ ...prev, weight: e.target.value }))}
@@ -845,7 +845,7 @@ export default function ActiveWorkoutPage() {
                               <span className="font-[family-name:var(--font-geist-mono)] text-[var(--accent-success)] flex-1">
                                 {completedSet.durationSeconds
                                   ? `Duration: ${formatDurationSeconds(completedSet.durationSeconds)}`
-                                  : `${completedSet.weight} x ${completedSet.reps}${completedSet.rpe ? ` @${completedSet.rpe}` : ''}`}
+                                  : `${completedSet.weight} lbs x ${completedSet.reps}${completedSet.rpe ? ` @${completedSet.rpe}` : ""}`}
                               </span>
                               <button
                                 onClick={() => startEditingSet(completedSet)}
@@ -861,13 +861,13 @@ export default function ActiveWorkoutPage() {
                             <div className="flex items-center justify-between">
                               <span className="text-[var(--text-muted)] text-sm">Set {setIdx + 1}</span>
                               <span className="text-[var(--text-muted)] text-sm">
-                                Target: {targetSet.weight} x {targetSet.reps}
+                                Target: {targetSet.weight} lbs x {targetSet.reps}
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
                               <input
                                 type="number"
-                                placeholder={String(targetSet.weight)}
+                                placeholder={`${targetSet.weight} lbs`}
                                 className="w-24 sm:w-28 shrink-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                                 value={form.weight || ""}
                                 onChange={(e) => handleInlineChange(formKey, "weight", e.target.value)}
@@ -933,7 +933,7 @@ export default function ActiveWorkoutPage() {
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
-                    placeholder="Weight"
+                    placeholder="Weight (lbs)"
                     className="w-24 sm:w-28 shrink-0 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                     value={newExercise.weight}
                     onChange={(e) => setNewExercise(prev => ({ ...prev, weight: e.target.value }))}

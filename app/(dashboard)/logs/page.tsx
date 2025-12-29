@@ -7,14 +7,34 @@ import { formatRelativeTime, formatLargeNumber } from "@/lib/utils";
 import { DeleteWorkoutButton } from "@/components/workout/delete-workout-button";
 import { ChevronRight } from "lucide-react";
 
-async function getWorkouts(userId: string) {
-  return await prisma.workout.findMany({
+async function getWorkoutsWithSets(userId: string) {
+  const workouts = await prisma.workout.findMany({
     where: { userId },
-    include: {
-      sets: true,
-    },
     orderBy: { startedAt: "desc" },
+    select: {
+      id: true,
+      programDay: true,
+      startedAt: true,
+      completedAt: true,
+    },
   });
+
+  if (workouts.length === 0) {
+    return { workouts, sets: [] };
+  }
+
+  const workoutIds = workouts.map((workout) => workout.id);
+  const sets = await prisma.workoutSet.findMany({
+    where: { workoutId: { in: workoutIds } },
+    select: {
+      workoutId: true,
+      exercise: true,
+      weight: true,
+      reps: true,
+    },
+  });
+
+  return { workouts, sets };
 }
 
 export default async function LogsPage() {
@@ -24,16 +44,16 @@ export default async function LogsPage() {
     redirect("/sign-in");
   }
 
-  const workouts = await getWorkouts(userId);
+  const { workouts, sets } = await getWorkoutsWithSets(userId);
 
-  // Calculate total volume for each workout
-  const workoutsWithVolume = workouts.map((workout) => {
-    const totalVolume = workout.sets.reduce(
-      (sum, set) => sum + set.weight * set.reps,
-      0
-    );
-    return { ...workout, totalVolume };
-  });
+  const workoutStats = new Map<string, { totalVolume: number; exercises: Set<string>; setCount: number }>();
+  for (const set of sets) {
+    const existing = workoutStats.get(set.workoutId) || { totalVolume: 0, exercises: new Set<string>(), setCount: 0 };
+    existing.totalVolume += set.weight * set.reps;
+    existing.exercises.add(set.exercise);
+    existing.setCount += 1;
+    workoutStats.set(set.workoutId, existing);
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -44,7 +64,7 @@ export default async function LogsPage() {
         Track your progress over time
       </p>
 
-      {workoutsWithVolume.length === 0 ? (
+      {workouts.length === 0 ? (
         <div className="text-center py-16 border border-[var(--border-subtle)]">
           <div className="text-4xl mb-4 text-[var(--text-muted)]">—</div>
           <h2 className="text-xl font-bold mb-2">No Workouts Yet</h2>
@@ -54,9 +74,12 @@ export default async function LogsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {workoutsWithVolume.map((workout) => {
+          {workouts.map((workout) => {
             const date = new Date(workout.startedAt);
-            const exercises = [...new Set(workout.sets.map((s) => s.exercise))];
+            const stats = workoutStats.get(workout.id);
+            const exercises = stats ? [...stats.exercises] : [];
+            const totalVolume = stats?.totalVolume ?? 0;
+            const setCount = stats?.setCount ?? 0;
 
             return (
               <Card key={workout.id} variant="interactive">
@@ -96,9 +119,9 @@ export default async function LogsPage() {
 
                       {/* Stats */}
                       <div className="flex flex-wrap gap-4 mt-3 text-sm text-[var(--text-secondary)]">
-                        <span>{workout.sets.length} sets</span>
+                        <span>{setCount} sets</span>
                         <span>
-                          {formatLargeNumber(workout.totalVolume)} lbs volume
+                          {formatLargeNumber(totalVolume)} lbs volume
                         </span>
                         <span>{exercises.length} exercises</span>
                       </div>
