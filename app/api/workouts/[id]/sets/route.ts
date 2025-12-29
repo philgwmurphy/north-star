@@ -26,7 +26,7 @@ export async function POST(
       return NextResponse.json({ error: "Workout not found" }, { status: 404 });
     }
 
-    const { exercise, weight, reps, setNumber, rpe, isWarmup } = await request.json();
+    const { exercise, weight, reps, setNumber, rpe, isWarmup, durationSeconds } = await request.json();
 
     const set = await prisma.workoutSet.create({
       data: {
@@ -34,6 +34,7 @@ export async function POST(
         exercise,
         weight,
         reps,
+        durationSeconds,
         setNumber,
         rpe,
         isWarmup: isWarmup || false,

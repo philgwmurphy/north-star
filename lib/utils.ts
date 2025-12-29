@@ -81,6 +81,18 @@ export function formatRelativeTime(date: Date | string): string {
 }
 
 /**
+ * Format a duration in seconds to a readable label.
+ */
+export function formatDurationSeconds(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds <= 0) return "0m";
+  const totalMinutes = Math.round(seconds / 60);
+  if (totalMinutes < 60) return `${totalMinutes}m`;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+}
+
+/**
  * Calculate total volume (weight * reps * sets)
  */
 export function calculateVolume(weight: number, reps: number, sets: number): number {

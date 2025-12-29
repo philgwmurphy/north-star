@@ -38,13 +38,14 @@ export async function PATCH(
       return NextResponse.json({ error: "Set not found" }, { status: 404 });
     }
 
-    const { weight, reps, rpe } = await request.json();
+    const { weight, reps, rpe, durationSeconds } = await request.json();
 
     const updatedSet = await prisma.workoutSet.update({
       where: { id: setId },
       data: {
         ...(weight !== undefined && { weight }),
         ...(reps !== undefined && { reps }),
+        ...(durationSeconds !== undefined && { durationSeconds }),
         ...(rpe !== undefined && { rpe }),
       },
     });

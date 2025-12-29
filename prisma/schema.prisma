@@ -64,6 +64,7 @@ model WorkoutSet {
   exercise    String
   weight      Float
   reps        Int
+  durationSeconds Int?
   setNumber   Int
   rpe         Int?
   isWarmup    Boolean  @default(false)
