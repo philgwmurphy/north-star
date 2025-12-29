@@ -27,6 +27,7 @@ export default function ProgramsPage() {
   });
   const [selectedProgram, setSelectedProgram] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [savingMaxes, setSavingMaxes] = useState(false);
   const [calculated1RMs, setCalculated1RMs] = useState<Record<string, number>>({});
 
   // Calculate 1RMs when inputs change
@@ -77,7 +78,7 @@ export default function ProgramsPage() {
     }));
   };
 
-  const handleSave = async () => {
+  const getRepMaxPayload = () => {
     const allLiftsValid = LIFTS.every((lift) => {
       const { weight, reps } = repMaxes[lift.key];
       return weight && reps && parseFloat(weight) > 0 && parseInt(reps) > 0;
@@ -95,8 +96,38 @@ export default function ProgramsPage() {
 
     if (!all1RMsCalculated) {
       alert("Please fill in valid weight and reps for all lifts");
-      return;
+      return null;
     }
+
+    return LIFTS.map((lift) => ({
+      exercise: lift.key,
+      weight: parseFloat(repMaxes[lift.key].weight),
+      reps: parseInt(repMaxes[lift.key].reps),
+      oneRM: calculated1RMs[lift.key]!,
+    }));
+  };
+
+  const handleSaveMaxes = async () => {
+    const repMaxData = getRepMaxPayload();
+    if (!repMaxData) return;
+
+    setSavingMaxes(true);
+    try {
+      await fetch("/api/user/rep-maxes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(repMaxData),
+      });
+    } catch (error) {
+      console.error("Failed to save rep maxes:", error);
+    } finally {
+      setSavingMaxes(false);
+    }
+  };
+
+  const handleSave = async () => {
+    const repMaxData = getRepMaxPayload();
+    if (!repMaxData) return;
 
     if (!selectedProgram) {
       alert("Please select a program");
@@ -106,13 +137,6 @@ export default function ProgramsPage() {
     setSaving(true);
     try {
       // Save rep maxes
-      const repMaxData = LIFTS.map((lift) => ({
-        exercise: lift.key,
-        weight: parseFloat(repMaxes[lift.key].weight),
-        reps: parseInt(repMaxes[lift.key].reps),
-        oneRM: calculated1RMs[lift.key]!,
-      }));
-
       await fetch("/api/user/rep-maxes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -148,12 +172,12 @@ export default function ProgramsPage() {
         <CardContent className="pt-6">
           <div className="flex items-center gap-3 mb-6">
             <h2 className="font-[family-name:var(--font-bebas-neue)] text-2xl tracking-wide">
-              CALCULATE YOUR 1RM
+              CALCULATE YOUR MAXES
             </h2>
             <Badge variant="advanced">STEP 1</Badge>
           </div>
           <p className="text-[var(--text-secondary)] mb-6">
-            Enter a recent lift weight and reps to calculate your estimated one-rep max.
+            Enter a recent lift weight and reps to estimate your training maxes.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -206,6 +230,15 @@ export default function ProgramsPage() {
                 </div>
               </div>
             ))}
+          </div>
+          <div className="mt-6 flex justify-end">
+            <Button
+              onClick={handleSaveMaxes}
+              loading={savingMaxes}
+              className="w-full md:w-auto"
+            >
+              Save Maxes
+            </Button>
           </div>
         </CardContent>
       </Card>
