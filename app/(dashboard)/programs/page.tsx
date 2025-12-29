@@ -129,11 +129,6 @@ export default function ProgramsPage() {
     const repMaxData = getRepMaxPayload();
     if (!repMaxData) return;
 
-    if (!selectedProgram) {
-      alert("Please select a program");
-      return;
-    }
-
     setSaving(true);
     try {
       // Save rep maxes
@@ -143,7 +138,7 @@ export default function ProgramsPage() {
         body: JSON.stringify(repMaxData),
       });
 
-      // Save selected program
+      // Save selected program (or clear selection)
       await fetch("/api/user/program", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -249,6 +244,16 @@ export default function ProgramsPage() {
           SELECT YOUR PROGRAM
         </h2>
         <Badge variant="advanced">STEP 2</Badge>
+        {selectedProgram && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSelectedProgram(null)}
+            className="ml-auto"
+          >
+            Clear selection
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
@@ -259,7 +264,7 @@ export default function ProgramsPage() {
             className={`cursor-pointer transition-all ${
               selectedProgram === key ? "ring-2 ring-[var(--accent-primary)]" : ""
             }`}
-            onClick={() => setSelectedProgram(key)}
+            onClick={() => setSelectedProgram(prev => (prev === key ? null : key))}
           >
             <CardContent className="pt-6">
               <div className="flex items-start justify-between mb-3">
