@@ -208,8 +208,8 @@ export default function ActiveWorkoutPage() {
       if (response.ok) {
         const newSet = await response.json();
         setWorkout(prev => prev ? { ...prev, sets: [...prev.sets, newSet] } : prev);
-        // Keep the exercise name for quick multi-set logging, clear weight/reps
-        setNewExercise(prev => ({ ...prev, reps: "" }));
+        // Clear the form for adding a different exercise
+        setNewExercise({ name: "", weight: "", reps: "" });
       }
     } catch (error) {
       console.error("Failed to log set:", error);
@@ -339,14 +339,14 @@ export default function ActiveWorkoutPage() {
           <div className="flex items-center gap-2">
             <input
               type="number"
-              className="w-20 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+              className="w-24 sm:w-28 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
               value={editForm.weight}
               onChange={(e) => setEditForm(prev => ({ ...prev, weight: e.target.value }))}
             />
             <span className="text-[var(--text-muted)] shrink-0">x</span>
             <input
               type="number"
-              className="w-16 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+              className="w-20 sm:w-24 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
               value={editForm.reps}
               onChange={(e) => setEditForm(prev => ({ ...prev, reps: e.target.value }))}
             />
@@ -396,7 +396,7 @@ export default function ActiveWorkoutPage() {
           <input
             type="number"
             placeholder={placeholder?.weight || "Weight"}
-            className="w-20 shrink-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+            className="w-24 sm:w-28 shrink-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
             value={inlineForms[formKey]?.weight || ""}
             onChange={(e) => handleInlineChange(formKey, "weight", e.target.value)}
           />
@@ -404,7 +404,7 @@ export default function ActiveWorkoutPage() {
           <input
             type="number"
             placeholder={placeholder?.reps || "Reps"}
-            className="w-16 shrink-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+            className="w-20 sm:w-24 shrink-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
             value={inlineForms[formKey]?.reps || ""}
             onChange={(e) => handleInlineChange(formKey, "reps", e.target.value)}
           />
@@ -503,7 +503,7 @@ export default function ActiveWorkoutPage() {
                   <input
                     type="number"
                     placeholder="Weight"
-                    className="w-20 shrink-0 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                    className="w-24 sm:w-28 shrink-0 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                     value={newExercise.weight}
                     onChange={(e) => setNewExercise(prev => ({ ...prev, weight: e.target.value }))}
                   />
@@ -511,7 +511,7 @@ export default function ActiveWorkoutPage() {
                   <input
                     type="number"
                     placeholder="Reps"
-                    className="w-20 shrink-0 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                    className="w-20 sm:w-24 shrink-0 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                     value={newExercise.reps}
                     onChange={(e) => setNewExercise(prev => ({ ...prev, reps: e.target.value }))}
                   />
@@ -586,14 +586,14 @@ export default function ActiveWorkoutPage() {
                               <div className="flex items-center gap-2">
                                 <input
                                   type="number"
-                                  className="w-20 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                                  className="w-24 sm:w-28 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                                   value={editForm.weight}
                                   onChange={(e) => setEditForm(prev => ({ ...prev, weight: e.target.value }))}
                                 />
                                 <span className="text-[var(--text-muted)] shrink-0">x</span>
                                 <input
                                   type="number"
-                                  className="w-16 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                                  className="w-20 sm:w-24 shrink-0 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                                   value={editForm.reps}
                                   onChange={(e) => setEditForm(prev => ({ ...prev, reps: e.target.value }))}
                                 />
@@ -642,7 +642,7 @@ export default function ActiveWorkoutPage() {
                               <input
                                 type="number"
                                 placeholder={String(targetSet.weight)}
-                                className="w-20 shrink-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                                className="w-24 sm:w-28 shrink-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                                 value={form.weight || ""}
                                 onChange={(e) => handleInlineChange(formKey, "weight", e.target.value)}
                               />
@@ -650,7 +650,7 @@ export default function ActiveWorkoutPage() {
                               <input
                                 type="number"
                                 placeholder={String(targetSet.reps).replace('+', '')}
-                                className="w-16 shrink-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                                className="w-20 sm:w-24 shrink-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                                 value={form.reps || ""}
                                 onChange={(e) => handleInlineChange(formKey, "reps", e.target.value)}
                               />
@@ -698,7 +698,7 @@ export default function ActiveWorkoutPage() {
                   <input
                     type="number"
                     placeholder="Weight"
-                    className="w-20 shrink-0 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                    className="w-24 sm:w-28 shrink-0 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                     value={newExercise.weight}
                     onChange={(e) => setNewExercise(prev => ({ ...prev, weight: e.target.value }))}
                   />
@@ -706,7 +706,7 @@ export default function ActiveWorkoutPage() {
                   <input
                     type="number"
                     placeholder="Reps"
-                    className="w-20 shrink-0 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                    className="w-20 sm:w-24 shrink-0 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                     value={newExercise.reps}
                     onChange={(e) => setNewExercise(prev => ({ ...prev, reps: e.target.value }))}
                   />
