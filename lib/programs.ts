@@ -881,229 +881,404 @@ export const programs: Record<string, Program> = {
   candito6week: {
     name: "Candito 6-Week",
     level: "advanced",
-    daysPerWeek: 4,
+    daysPerWeek: 5,
     cycleLength: "6 weeks",
     hasWeeks: true,
     totalWeeks: 6,
     description:
-      "Jonnie Candito's periodized program. Phases through hypertrophy, strength, and peaking for competition prep.",
+      "Jonnie Candito's 6-week strength program with upper/lower frequency shifts, rep maxes, and heavy acclimation phases.",
     getWorkouts: (maxes: RepMaxes, week: number = 1): WorkoutDay[] => {
-      const tm = {
+      const max = {
         squat: maxes.squat,
         bench: maxes.bench,
         deadlift: maxes.deadlift,
       };
 
-      // Week 1-2: Muscular Conditioning (hypertrophy)
-      // Week 3-4: Strength
-      // Week 5: Intensity
-      // Week 6: Peaking
+      const roundPct = (value: number, pct: number) => roundWeight(value * pct);
+      const roundPctPlus = (value: number, pct: number, offset: number) =>
+        roundWeight(value * pct) + offset;
+      const roundPctOffset = (value: number, pct: number, offset: number) =>
+        roundWeight(value * pct + offset);
 
-      if (week <= 2) {
-        // Hypertrophy phase
-        const pct = week === 1 ? 0.7 : 0.75;
+      const upperAccessoriesWeek1 = [
+        { name: "Barbell Row", sets: "4 sets: 10/10/8/6" },
+        { name: "Military Press", sets: "4 sets: 12/12/10/8" },
+        { name: "Weighted Pull-up", sets: "4 sets: 12/12/10/8" },
+        { name: "Optional Exercise 1", sets: "4x8-12 (optional)" },
+        { name: "Optional Exercise 2", sets: "4x8-12 (optional)" },
+      ];
+
+      const upperAccessoriesWeek2 = [
+        { name: "Barbell Row", sets: "3 sets: 10/8/8" },
+        { name: "Military Press", sets: "3 sets: 10/8/6" },
+        { name: "Weighted Pull-up", sets: "3 sets: 10/8/6" },
+        { name: "Optional Exercise 1", sets: "4x8-12 (optional)" },
+        { name: "Optional Exercise 2", sets: "4x8-12 (optional)" },
+      ];
+
+      const upperAccessoriesWeek3 = [
+        { name: "Barbell Row", sets: "3x6" },
+        { name: "Military Press", sets: "3x6" },
+        { name: "Weighted Pull-up", sets: "3x6" },
+      ];
+
+      const upperAccessoriesWeek4 = [
+        { name: "Barbell Row", sets: "4 sets: 10/10/8/6" },
+        { name: "Military Press", sets: "4 sets: 12/12/10/8" },
+        { name: "Weighted Pull-up", sets: "4 sets: 12/12/10/8" },
+        { name: "Optional Exercise 1", sets: "4x8-12 (optional)" },
+        { name: "Optional Exercise 2", sets: "4x8-12 (optional)" },
+      ];
+
+      const upperAccessoriesWeek5 = [
+        { name: "Barbell Row", sets: "3 sets: 8/6/6" },
+        { name: "Military Press", sets: "3 sets: 8/6/6" },
+        { name: "Weighted Pull-up", sets: "3 sets: 8/6/6" },
+        { name: "Optional Exercise 1", sets: "3x8-12 (optional)" },
+        { name: "Optional Exercise 2", sets: "3x8-12 (optional)" },
+      ];
+
+      const optionalLower = [
+        { name: "Optional Lower Body", sets: "4x8-12 (optional)" },
+        { name: "Optional Lower Body", sets: "4x8-12 (optional)" },
+      ];
+
+      if (week === 1) {
         return [
           {
             day: "Day 1",
-            focus: "Lower Hypertrophy",
+            focus: "Lower - 4x6 @ 80%",
             exercises: [
-              { name: "Squat", sets: Array(6).fill({ weight: roundWeight(tm.squat * pct), reps: 8 }) },
-              { name: "Romanian Deadlift", sets: "3x10" },
-              { name: "Leg Press", sets: "3x12" },
-              { name: "Leg Curls", sets: "3x12" },
+              { name: "Squat", sets: Array(4).fill({ weight: roundPct(max.squat, 0.8), reps: 6 }) },
+              { name: "Deadlift", sets: Array(2).fill({ weight: roundPct(max.deadlift, 0.8), reps: 6 }) },
+              ...optionalLower,
             ],
           },
           {
             day: "Day 2",
-            focus: "Upper Hypertrophy",
-            exercises: [
-              { name: "Bench Press", sets: Array(6).fill({ weight: roundWeight(tm.bench * pct), reps: 8 }) },
-              { name: "Barbell Row", sets: "4x8" },
-              { name: "Overhead Press", sets: "3x10" },
-              { name: "Pull-ups", sets: "3x max" },
-            ],
-          },
-          {
-            day: "Day 3",
-            focus: "Lower Power",
-            exercises: [
-              { name: "Squat", sets: Array(4).fill({ weight: roundWeight(tm.squat * (pct + 0.1)), reps: 6 }) },
-              { name: "Deadlift", sets: Array(3).fill({ weight: roundWeight(tm.deadlift * pct), reps: 6 }) },
-              { name: "Front Squat", sets: "3x8" },
-            ],
-          },
-          {
-            day: "Day 4",
-            focus: "Upper Power",
-            exercises: [
-              { name: "Bench Press", sets: Array(4).fill({ weight: roundWeight(tm.bench * (pct + 0.1)), reps: 6 }) },
-              { name: "Weighted Pull-ups", sets: "4x6" },
-              { name: "Close Grip Bench", sets: "3x8" },
-              { name: "Dumbbell Row", sets: "3x10" },
-            ],
-          },
-        ];
-      } else if (week <= 4) {
-        // Strength phase
-        const pct = week === 3 ? 0.8 : 0.85;
-        return [
-          {
-            day: "Day 1",
-            focus: "Lower Strength",
-            exercises: [
-              { name: "Squat", sets: Array(5).fill({ weight: roundWeight(tm.squat * pct), reps: 5 }) },
-              { name: "Pause Squat", sets: "3x4" },
-              { name: "Leg Curls", sets: "3x10" },
-            ],
-          },
-          {
-            day: "Day 2",
-            focus: "Upper Strength",
-            exercises: [
-              { name: "Bench Press", sets: Array(5).fill({ weight: roundWeight(tm.bench * pct), reps: 5 }) },
-              { name: "Barbell Row", sets: "5x5" },
-              { name: "Close Grip Bench", sets: "3x6" },
-            ],
-          },
-          {
-            day: "Day 3",
-            focus: "Deadlift Focus",
-            exercises: [
-              { name: "Deadlift", sets: Array(5).fill({ weight: roundWeight(tm.deadlift * pct), reps: 4 }) },
-              { name: "Front Squat", sets: "3x5" },
-              { name: "Good Mornings", sets: "3x8" },
-            ],
-          },
-          {
-            day: "Day 4",
-            focus: "Upper Volume",
-            exercises: [
-              { name: "Bench Press", sets: Array(4).fill({ weight: roundWeight(tm.bench * (pct - 0.1)), reps: 6 }) },
-              { name: "Weighted Pull-ups", sets: "5x5" },
-              { name: "Overhead Press", sets: "3x8" },
-            ],
-          },
-        ];
-      } else if (week === 5) {
-        // Intensity phase
-        return [
-          {
-            day: "Day 1",
-            focus: "Heavy Squat",
-            exercises: [
-              {
-                name: "Squat",
-                sets: [
-                  { weight: roundWeight(tm.squat * 0.85), reps: 3 },
-                  { weight: roundWeight(tm.squat * 0.9), reps: 2 },
-                  { weight: roundWeight(tm.squat * 0.95), reps: 1 },
-                ],
-              },
-              { name: "Pause Squat", sets: "2x3 @ 75%" },
-            ],
-          },
-          {
-            day: "Day 2",
-            focus: "Heavy Bench",
+            focus: "Upper - Volume",
             exercises: [
               {
                 name: "Bench Press",
                 sets: [
-                  { weight: roundWeight(tm.bench * 0.85), reps: 3 },
-                  { weight: roundWeight(tm.bench * 0.9), reps: 2 },
-                  { weight: roundWeight(tm.bench * 0.95), reps: 1 },
+                  { weight: roundPct(max.bench, 0.5), reps: 10 },
+                  { weight: roundPct(max.bench, 0.675), reps: 10 },
+                  { weight: roundPct(max.bench, 0.75), reps: 8 },
+                  { weight: roundPct(max.bench, 0.775), reps: 6 },
                 ],
               },
-              { name: "Close Grip Bench", sets: "2x4 @ 75%" },
+              ...upperAccessoriesWeek1,
             ],
           },
           {
             day: "Day 3",
-            focus: "Heavy Deadlift",
-            exercises: [
-              {
-                name: "Deadlift",
-                sets: [
-                  { weight: roundWeight(tm.deadlift * 0.85), reps: 3 },
-                  { weight: roundWeight(tm.deadlift * 0.9), reps: 2 },
-                  { weight: roundWeight(tm.deadlift * 0.95), reps: 1 },
-                ],
-              },
-              { name: "Front Squat", sets: "2x4 @ 70%" },
-            ],
-          },
-          {
-            day: "Day 4",
-            focus: "Light Recovery",
-            exercises: [
-              { name: "Bench Press", sets: "3x5 @ 70%" },
-              { name: "Barbell Row", sets: "3x8" },
-              { name: "Face Pulls", sets: "3x15" },
-            ],
-          },
-        ];
-      } else {
-        // Week 6: Peaking/Test
-        return [
-          {
-            day: "Day 1",
-            focus: "Squat Test",
-            exercises: [
-              {
-                name: "Squat",
-                sets: [
-                  { weight: roundWeight(tm.squat * 0.7), reps: 3 },
-                  { weight: roundWeight(tm.squat * 0.8), reps: 2 },
-                  { weight: roundWeight(tm.squat * 0.9), reps: 1 },
-                  { weight: roundWeight(tm.squat * 1.0), reps: "1" },
-                  { weight: roundWeight(tm.squat * 1.025), reps: "1 PR" },
-                ],
-              },
-            ],
-          },
-          {
-            day: "Day 2",
-            focus: "Bench Test",
+            focus: "Upper - Volume",
             exercises: [
               {
                 name: "Bench Press",
                 sets: [
-                  { weight: roundWeight(tm.bench * 0.7), reps: 3 },
-                  { weight: roundWeight(tm.bench * 0.8), reps: 2 },
-                  { weight: roundWeight(tm.bench * 0.9), reps: 1 },
-                  { weight: roundWeight(tm.bench * 1.0), reps: "1" },
-                  { weight: roundWeight(tm.bench * 1.025), reps: "1 PR" },
+                  { weight: roundPct(max.bench, 0.5), reps: 10 },
+                  { weight: roundPct(max.bench, 0.675), reps: 10 },
+                  { weight: roundPct(max.bench, 0.75), reps: 8 },
+                  { weight: roundPct(max.bench, 0.775), reps: 6 },
                 ],
               },
-            ],
-          },
-          {
-            day: "Day 3",
-            focus: "Deadlift Test",
-            exercises: [
-              {
-                name: "Deadlift",
-                sets: [
-                  { weight: roundWeight(tm.deadlift * 0.7), reps: 3 },
-                  { weight: roundWeight(tm.deadlift * 0.8), reps: 2 },
-                  { weight: roundWeight(tm.deadlift * 0.9), reps: 1 },
-                  { weight: roundWeight(tm.deadlift * 1.0), reps: "1" },
-                  { weight: roundWeight(tm.deadlift * 1.025), reps: "1 PR" },
-                ],
-              },
+              ...upperAccessoriesWeek1,
             ],
           },
           {
             day: "Day 4",
-            focus: "Deload",
+            focus: "Lower - 4x8 @ 70%",
             exercises: [
-              { name: "Light Squat", sets: "3x5 @ 50%" },
-              { name: "Light Bench", sets: "3x5 @ 50%" },
-              { name: "Mobility Work", sets: "15 min" },
+              { name: "Squat", sets: Array(4).fill({ weight: roundPct(max.squat, 0.7), reps: 8 }) },
+              { name: "Deadlift", sets: Array(2).fill({ weight: roundPct(max.deadlift, 0.7), reps: 8 }) },
+              ...optionalLower,
+            ],
+          },
+          {
+            day: "Day 5",
+            focus: "Upper - Bench MR",
+            exercises: [
+              { name: "Bench Press", sets: [{ weight: roundPct(max.bench, 0.8), reps: "MR" }] },
+              ...upperAccessoriesWeek1,
             ],
           },
         ];
       }
+
+      if (week === 2) {
+        return [
+          {
+            day: "Day 1",
+            focus: "Lower - Squat MR10",
+            exercises: [
+              { name: "Squat", sets: [{ weight: roundPct(max.squat, 0.8), reps: "MR10" }] },
+              {
+                name: "Back-off Squat",
+                sets: Array(5).fill({ weight: roundPctPlus(max.squat, 0.8, 5), reps: 3 }),
+              },
+              { name: "Deadlift Variation", sets: "3x8" },
+              ...optionalLower,
+            ],
+          },
+          {
+            day: "Day 2",
+            focus: "Upper - Hypertrophy",
+            exercises: [
+              {
+                name: "Bench Press",
+                sets: [
+                  { weight: roundPct(max.bench, 0.725), reps: 10 },
+                  { weight: roundPct(max.bench, 0.775), reps: 8 },
+                  { weight: roundPctPlus(max.bench, 0.8, 5), reps: "6-8" },
+                ],
+              },
+              ...upperAccessoriesWeek2,
+            ],
+          },
+          {
+            day: "Day 3",
+            focus: "Lower - Squat MR10 + Back-off",
+            exercises: [
+              { name: "Squat", sets: [{ weight: roundPctPlus(max.squat, 0.8, 5), reps: "MR10" }] },
+              {
+                name: "Back-off Squat",
+                sets:
+                  "Reduce 10 lbs, then 10x3 if 10 reps, 8x3 if 8-9 reps, 5x3 if 7 reps (skip if <7).",
+              },
+              { name: "Deadlift Variation", sets: "3x8" },
+              ...optionalLower,
+            ],
+          },
+          {
+            day: "Day 4",
+            focus: "Upper - Hypertrophy",
+            exercises: [
+              {
+                name: "Bench Press",
+                sets: [
+                  { weight: roundPct(max.bench, 0.725), reps: 10 },
+                  { weight: roundPct(max.bench, 0.775), reps: 8 },
+                  { weight: roundPctPlus(max.bench, 0.8, 5), reps: "6-8" },
+                ],
+              },
+              ...upperAccessoriesWeek2,
+            ],
+          },
+          {
+            day: "Day 5",
+            focus: "Upper - Bench MR",
+            exercises: [
+              { name: "Bench Press", sets: [{ weight: roundPctPlus(max.bench, 0.8, -5), reps: "MR" }] },
+              ...upperAccessoriesWeek2,
+            ],
+          },
+        ];
+      }
+
+      if (week === 3) {
+        return [
+          {
+            day: "Day 1",
+            focus: "Lower - Linear Max OT",
+            exercises: [
+              { name: "Squat", sets: Array(3).fill({ weight: roundPctPlus(max.squat, 0.85, 5), reps: "4-6" }) },
+              { name: "Deadlift", sets: Array(2).fill({ weight: roundPct(max.deadlift, 0.875), reps: "3-6" }) },
+              { name: "Accessory Work", sets: "None" },
+            ],
+          },
+          {
+            day: "Day 2",
+            focus: "Upper - Linear Max OT",
+            exercises: [
+              { name: "Bench Press", sets: Array(3).fill({ weight: roundPct(max.bench, 0.85), reps: "4-6" }) },
+              ...upperAccessoriesWeek3,
+            ],
+          },
+          {
+            day: "Day 3",
+            focus: "Lower - Heavy Single",
+            exercises: [
+              {
+                name: "Squat",
+                sets: [{ weight: roundWeight(max.squat * 0.85 + 5) + 5, reps: "4-6" }],
+              },
+              { name: "Deadlift Variation", sets: "1x8" },
+              { name: "Accessory Work", sets: "None" },
+            ],
+          },
+          {
+            day: "Day 4",
+            focus: "Upper - Linear Max OT",
+            exercises: [
+              { name: "Bench Press", sets: Array(3).fill({ weight: roundPctPlus(max.bench, 0.85, 5), reps: "4-6" }) },
+              ...upperAccessoriesWeek3,
+            ],
+          },
+        ];
+      }
+
+      if (week === 4) {
+        return [
+          {
+            day: "Day 1",
+            focus: "Lower - Heavy Acclimation",
+            exercises: [
+              {
+                name: "Squat",
+                sets: [
+                  { weight: roundPctPlus(max.squat, 0.9, -5), reps: 3 },
+                  { weight: roundPct(max.squat, 0.9), reps: 3 },
+                  { weight: roundPctPlus(max.squat, 0.9, 5), reps: 3 },
+                ],
+              },
+              { name: "Deadlift Variation", sets: "2x6" },
+              ...optionalLower,
+            ],
+          },
+          {
+            day: "Day 2",
+            focus: "Upper - Heavy Acclimation",
+            exercises: [
+              {
+                name: "Bench Press",
+                sets: [
+                  { weight: roundPctOffset(max.bench, 0.875, -5), reps: 3 },
+                  { weight: roundPctOffset(max.bench, 0.9, -5), reps: 3 },
+                  { weight: roundPct(max.bench, 0.9), reps: 3 },
+                ],
+              },
+              ...upperAccessoriesWeek4,
+            ],
+          },
+          {
+            day: "Day 3",
+            focus: "Lower - Heavy Singles",
+            exercises: [
+              {
+                name: "Squat",
+                sets: [
+                  { weight: roundPctPlus(max.squat, 0.9, 5), reps: 3 },
+                  { weight: roundPct(max.squat, 0.95), reps: "1-2" },
+                ],
+              },
+              {
+                name: "Deadlift",
+                sets: [
+                  { weight: roundPctPlus(max.deadlift, 0.9, 5), reps: 3 },
+                  { weight: roundPct(max.deadlift, 0.95), reps: "1-2" },
+                ],
+              },
+              ...optionalLower,
+            ],
+          },
+          {
+            day: "Day 4",
+            focus: "Upper - Heavy Singles",
+            exercises: [
+              {
+                name: "Bench Press",
+                sets: [
+                  { weight: roundPct(max.bench, 0.875), reps: 3 },
+                  { weight: roundPct(max.bench, 0.9), reps: "2-4" },
+                  { weight: roundPct(max.bench, 0.95), reps: "1-2" },
+                ],
+              },
+              ...upperAccessoriesWeek4,
+            ],
+          },
+        ];
+      }
+
+      if (week === 5) {
+        return [
+          {
+            day: "Day 1",
+            focus: "Lower - High Intensity",
+            exercises: [
+              { name: "Squat", sets: [{ weight: roundPct(max.squat, 0.975), reps: "1-4" }] },
+              {
+                name: "Deadlift",
+                sets: [
+                  { weight: roundPct(max.deadlift, 0.675), reps: 4 },
+                  { weight: roundPct(max.deadlift, 0.7), reps: 4 },
+                  { weight: roundPct(max.deadlift, 0.725), reps: 2 },
+                ],
+              },
+              ...optionalLower,
+            ],
+          },
+          {
+            day: "Day 2",
+            focus: "Upper - High Intensity",
+            exercises: [
+              { name: "Bench Press", sets: [{ weight: roundPct(max.bench, 0.975), reps: "1-4" }] },
+              ...upperAccessoriesWeek5,
+            ],
+          },
+          {
+            day: "Day 3",
+            focus: "Lower - Deadlift Max",
+            exercises: [
+              { name: "Deadlift", sets: [{ weight: roundPct(max.deadlift, 0.975), reps: "1-4" }] },
+              ...optionalLower,
+            ],
+          },
+        ];
+      }
+
+      return [
+        {
+          day: "Day 1",
+          focus: "Deload Option (Week 1 Repeat)",
+          exercises: [
+            { name: "Squat", sets: Array(4).fill({ weight: roundPct(max.squat, 0.8), reps: 6 }) },
+            { name: "Deadlift", sets: Array(2).fill({ weight: roundPct(max.deadlift, 0.8), reps: 6 }) },
+            ...optionalLower,
+          ],
+        },
+        {
+          day: "Day 2",
+          focus: "Deload Option (Week 1 Repeat)",
+          exercises: [
+            {
+              name: "Bench Press",
+              sets: [
+                { weight: roundPct(max.bench, 0.5), reps: 10 },
+                { weight: roundPct(max.bench, 0.675), reps: 10 },
+                { weight: roundPct(max.bench, 0.75), reps: 8 },
+                { weight: roundPct(max.bench, 0.775), reps: 6 },
+              ],
+            },
+            ...upperAccessoriesWeek1,
+          ],
+        },
+        {
+          day: "Day 3",
+          focus: "Deload Option (Week 1 Repeat)",
+          exercises: [
+            {
+              name: "Bench Press",
+              sets: [
+                { weight: roundPct(max.bench, 0.5), reps: 10 },
+                { weight: roundPct(max.bench, 0.675), reps: 10 },
+                { weight: roundPct(max.bench, 0.75), reps: 8 },
+                { weight: roundPct(max.bench, 0.775), reps: 6 },
+              ],
+            },
+            ...upperAccessoriesWeek1,
+          ],
+        },
+        {
+          day: "Day 4",
+          focus: "Deload Option (Week 1 Repeat)",
+          exercises: [
+            { name: "Squat", sets: Array(4).fill({ weight: roundPct(max.squat, 0.7), reps: 8 }) },
+            { name: "Deadlift", sets: Array(2).fill({ weight: roundPct(max.deadlift, 0.7), reps: 8 }) },
+            ...optionalLower,
+          ],
+        },
+      ];
     },
   },
 
