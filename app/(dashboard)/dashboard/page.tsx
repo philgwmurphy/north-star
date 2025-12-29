@@ -2,8 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { BarChart3, ClipboardList, BookOpen, Settings, ChevronRight, ArrowRight } from "lucide-react";
-import { QuickStartButton } from "@/components/workout/quick-start-button";
-import { CustomStartButton } from "@/components/workout/custom-start-button";
+import { QuickStartSection } from "@/components/workout/quick-start-section";
 import { BodyWeightQuickEntry } from "@/components/body-weight/quick-entry";
 import { prisma } from "@/lib/db";
 import { programs, type RepMaxes } from "@/lib/programs";
@@ -107,14 +106,11 @@ export default async function HomePage() {
             </div>
           </Link>
         ) : (
-          <div className="space-y-4">
-            <QuickStartButton
-              programKey={user?.selectedProgram || null}
-              repMaxes={repMaxes}
-              nextDay={nextDay}
-            />
-            <CustomStartButton />
-          </div>
+          <QuickStartSection
+            programKey={user?.selectedProgram || null}
+            repMaxes={repMaxes}
+            nextDay={nextDay}
+          />
         )}
       </section>
 
