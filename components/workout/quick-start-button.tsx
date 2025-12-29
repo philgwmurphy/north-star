@@ -34,7 +34,9 @@ export function QuickStartButton({ programKey, repMaxes, nextDay }: QuickStartBu
       if (response.ok) {
         const workout = await response.json();
         router.push(`/workout/${workout.id}`);
+        return;
       }
+      setIsStarting(false);
     } catch (error) {
       console.error("Failed to start workout:", error);
       setIsStarting(false);

@@ -256,14 +256,17 @@ export const programs: Record<string, Program> = {
     daysPerWeek: 3,
     cycleLength: "1 week",
     description:
-      "The quintessential beginner program. Simple, effective, builds foundation. Add 5 lbs every successful workout.",
+      "The quintessential beginner program. Start with empty bar or light weight, add 5 lbs per workout. Builds foundation through progressive overload.",
     getWorkouts: (maxes: RepMaxes): WorkoutDay[] => {
+      // StrongLifts officially starts with empty bar (45 lbs) for most lifts
+      // For users with existing maxes, we use ~30% as a conservative starting point
+      // Deadlift/Row start heavier since bar must rest on floor
       const w = {
-        squat: roundWeight(maxes.squat * 0.5),
-        bench: roundWeight(maxes.bench * 0.5),
-        row: roundWeight(maxes.bench * 0.5),
-        ohp: roundWeight(maxes.ohp * 0.5),
-        deadlift: roundWeight(maxes.deadlift * 0.5),
+        squat: Math.max(45, roundWeight(maxes.squat * 0.3)),
+        bench: Math.max(45, roundWeight(maxes.bench * 0.3)),
+        row: Math.max(65, roundWeight(maxes.bench * 0.35)),
+        ohp: Math.max(45, roundWeight(maxes.ohp * 0.3)),
+        deadlift: Math.max(95, roundWeight(maxes.deadlift * 0.35)),
       };
 
       return [
@@ -313,13 +316,22 @@ export const programs: Record<string, Program> = {
     daysPerWeek: 4,
     cycleLength: "1 week",
     description:
-      "Cody Lefever's beginner GZCL. Balances strength and hypertrophy with T1/T2/T3 exercise tiers.",
+      "Cody Lefever's beginner GZCL. T1 heavy compounds (5x3+), T2 moderate volume (3x10), T3 accessories (3x15+). Add weight each session.",
     getWorkouts: (maxes: RepMaxes): WorkoutDay[] => {
-      const tm = {
-        squat: roundWeight(maxes.squat * 0.85),
-        bench: roundWeight(maxes.bench * 0.85),
-        deadlift: roundWeight(maxes.deadlift * 0.85),
-        ohp: roundWeight(maxes.ohp * 0.85),
+      // GZCLP uses weight you can lift for prescribed reps, not fixed % of 1RM
+      // T1: ~72-75% of 1RM (weight for 5x3)
+      // T2: ~55-60% of 1RM (weight for 3x10)
+      const t1 = {
+        squat: roundWeight(maxes.squat * 0.72),
+        bench: roundWeight(maxes.bench * 0.72),
+        deadlift: roundWeight(maxes.deadlift * 0.72),
+        ohp: roundWeight(maxes.ohp * 0.72),
+      };
+      const t2 = {
+        squat: roundWeight(maxes.squat * 0.55),
+        bench: roundWeight(maxes.bench * 0.55),
+        deadlift: roundWeight(maxes.deadlift * 0.55),
+        ohp: roundWeight(maxes.ohp * 0.55),
       };
 
       return [
@@ -330,19 +342,19 @@ export const programs: Record<string, Program> = {
             {
               name: "Squat (T1)",
               sets: [
-                { weight: tm.squat, reps: 3 },
-                { weight: tm.squat, reps: 3 },
-                { weight: tm.squat, reps: 3 },
-                { weight: tm.squat, reps: 3 },
-                { weight: tm.squat, reps: "3+" },
+                { weight: t1.squat, reps: 3 },
+                { weight: t1.squat, reps: 3 },
+                { weight: t1.squat, reps: 3 },
+                { weight: t1.squat, reps: 3 },
+                { weight: t1.squat, reps: "3+" },
               ],
             },
             {
-              name: "Bench (T2)",
+              name: "Bench Press (T2)",
               sets: [
-                { weight: roundWeight(tm.bench * 0.65), reps: 10 },
-                { weight: roundWeight(tm.bench * 0.65), reps: 10 },
-                { weight: roundWeight(tm.bench * 0.65), reps: 10 },
+                { weight: t2.bench, reps: 10 },
+                { weight: t2.bench, reps: 10 },
+                { weight: t2.bench, reps: 10 },
               ],
             },
             { name: "Lat Pulldown (T3)", sets: "3x15+" },
@@ -353,21 +365,21 @@ export const programs: Record<string, Program> = {
           focus: "OHP/Deadlift",
           exercises: [
             {
-              name: "OHP (T1)",
+              name: "Overhead Press (T1)",
               sets: [
-                { weight: tm.ohp, reps: 3 },
-                { weight: tm.ohp, reps: 3 },
-                { weight: tm.ohp, reps: 3 },
-                { weight: tm.ohp, reps: 3 },
-                { weight: tm.ohp, reps: "3+" },
+                { weight: t1.ohp, reps: 3 },
+                { weight: t1.ohp, reps: 3 },
+                { weight: t1.ohp, reps: 3 },
+                { weight: t1.ohp, reps: 3 },
+                { weight: t1.ohp, reps: "3+" },
               ],
             },
             {
               name: "Deadlift (T2)",
               sets: [
-                { weight: roundWeight(tm.deadlift * 0.65), reps: 10 },
-                { weight: roundWeight(tm.deadlift * 0.65), reps: 10 },
-                { weight: roundWeight(tm.deadlift * 0.65), reps: 10 },
+                { weight: t2.deadlift, reps: 10 },
+                { weight: t2.deadlift, reps: 10 },
+                { weight: t2.deadlift, reps: 10 },
               ],
             },
             { name: "Dumbbell Row (T3)", sets: "3x15+" },
@@ -378,21 +390,21 @@ export const programs: Record<string, Program> = {
           focus: "Bench/Squat",
           exercises: [
             {
-              name: "Bench (T1)",
+              name: "Bench Press (T1)",
               sets: [
-                { weight: tm.bench, reps: 3 },
-                { weight: tm.bench, reps: 3 },
-                { weight: tm.bench, reps: 3 },
-                { weight: tm.bench, reps: 3 },
-                { weight: tm.bench, reps: "3+" },
+                { weight: t1.bench, reps: 3 },
+                { weight: t1.bench, reps: 3 },
+                { weight: t1.bench, reps: 3 },
+                { weight: t1.bench, reps: 3 },
+                { weight: t1.bench, reps: "3+" },
               ],
             },
             {
               name: "Squat (T2)",
               sets: [
-                { weight: roundWeight(tm.squat * 0.65), reps: 10 },
-                { weight: roundWeight(tm.squat * 0.65), reps: 10 },
-                { weight: roundWeight(tm.squat * 0.65), reps: 10 },
+                { weight: t2.squat, reps: 10 },
+                { weight: t2.squat, reps: 10 },
+                { weight: t2.squat, reps: 10 },
               ],
             },
             { name: "Lat Pulldown (T3)", sets: "3x15+" },
@@ -405,19 +417,19 @@ export const programs: Record<string, Program> = {
             {
               name: "Deadlift (T1)",
               sets: [
-                { weight: tm.deadlift, reps: 3 },
-                { weight: tm.deadlift, reps: 3 },
-                { weight: tm.deadlift, reps: 3 },
-                { weight: tm.deadlift, reps: 3 },
-                { weight: tm.deadlift, reps: "3+" },
+                { weight: t1.deadlift, reps: 3 },
+                { weight: t1.deadlift, reps: 3 },
+                { weight: t1.deadlift, reps: 3 },
+                { weight: t1.deadlift, reps: 3 },
+                { weight: t1.deadlift, reps: "3+" },
               ],
             },
             {
-              name: "OHP (T2)",
+              name: "Overhead Press (T2)",
               sets: [
-                { weight: roundWeight(tm.ohp * 0.65), reps: 10 },
-                { weight: roundWeight(tm.ohp * 0.65), reps: 10 },
-                { weight: roundWeight(tm.ohp * 0.65), reps: 10 },
+                { weight: t2.ohp, reps: 10 },
+                { weight: t2.ohp, reps: 10 },
+                { weight: t2.ohp, reps: 10 },
               ],
             },
             { name: "Dumbbell Row (T3)", sets: "3x15+" },
@@ -433,12 +445,28 @@ export const programs: Record<string, Program> = {
     daysPerWeek: 3,
     cycleLength: "1 week",
     description:
-      "Volume day, recovery day, intensity day. Perfect for those who stalled on LP but want weekly PRs.",
+      "Volume day, recovery day, intensity day. 5x5 Monday at 90% of 5RM, light Wednesday, new 5RM PR Friday.",
     getWorkouts: (maxes: RepMaxes): WorkoutDay[] => {
-      const w = {
-        squat: roundWeight(maxes.squat * 0.9),
-        bench: roundWeight(maxes.bench * 0.9),
-        deadlift: roundWeight(maxes.deadlift * 0.9),
+      // Texas Method uses 5RM, not 1RM
+      // 5RM is approximately 85% of 1RM
+      // Volume Day: 90% of 5RM = ~77% of 1RM
+      // Recovery Day: 80% of Volume Day weight
+      // Intensity Day: 5RM (work up to new PR)
+      const fiveRM = {
+        squat: roundWeight(maxes.squat * 0.85),
+        bench: roundWeight(maxes.bench * 0.85),
+        deadlift: roundWeight(maxes.deadlift * 0.85),
+        ohp: roundWeight(maxes.ohp * 0.85),
+      };
+
+      const volumeDay = {
+        squat: roundWeight(fiveRM.squat * 0.9),
+        bench: roundWeight(fiveRM.bench * 0.9),
+      };
+
+      const recoveryDay = {
+        squat: roundWeight(volumeDay.squat * 0.8),
+        press: roundWeight(fiveRM.ohp * 0.9),
       };
 
       return [
@@ -448,13 +476,16 @@ export const programs: Record<string, Program> = {
           exercises: [
             {
               name: "Squat",
-              sets: Array(5).fill({ weight: roundWeight(w.squat * 0.9), reps: 5 }),
+              sets: Array(5).fill({ weight: volumeDay.squat, reps: 5 }),
             },
             {
               name: "Bench Press",
-              sets: Array(5).fill({ weight: roundWeight(w.bench * 0.9), reps: 5 }),
+              sets: Array(5).fill({ weight: volumeDay.bench, reps: 5 }),
             },
-            { name: "Barbell Row", sets: "3x5" },
+            {
+              name: "Deadlift",
+              sets: [{ weight: roundWeight(fiveRM.deadlift * 0.9), reps: 5 }],
+            },
           ],
         },
         {
@@ -464,16 +495,16 @@ export const programs: Record<string, Program> = {
             {
               name: "Squat",
               sets: [
-                { weight: roundWeight(w.squat * 0.8), reps: 5 },
-                { weight: roundWeight(w.squat * 0.8), reps: 5 },
+                { weight: recoveryDay.squat, reps: 5 },
+                { weight: recoveryDay.squat, reps: 5 },
               ],
             },
             {
               name: "Overhead Press",
               sets: [
-                { weight: roundWeight(w.bench * 0.6), reps: 5 },
-                { weight: roundWeight(w.bench * 0.6), reps: 5 },
-                { weight: roundWeight(w.bench * 0.6), reps: 5 },
+                { weight: recoveryDay.press, reps: 5 },
+                { weight: recoveryDay.press, reps: 5 },
+                { weight: recoveryDay.press, reps: 5 },
               ],
             },
             { name: "Chin-ups", sets: "3x max" },
@@ -486,15 +517,15 @@ export const programs: Record<string, Program> = {
           exercises: [
             {
               name: "Squat",
-              sets: [{ weight: w.squat, reps: 5 }],
+              sets: [{ weight: fiveRM.squat, reps: "5 PR" }],
             },
             {
               name: "Bench Press",
-              sets: [{ weight: w.bench, reps: 5 }],
+              sets: [{ weight: fiveRM.bench, reps: "5 PR" }],
             },
             {
-              name: "Deadlift",
-              sets: [{ weight: w.deadlift, reps: 5 }],
+              name: "Power Clean",
+              sets: Array(5).fill({ weight: roundWeight(maxes.deadlift * 0.5), reps: 3 }),
             },
           ],
         },

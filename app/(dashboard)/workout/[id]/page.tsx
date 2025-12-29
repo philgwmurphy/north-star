@@ -101,6 +101,34 @@ export default function ActiveWorkoutPage() {
 
   const getFormKey = (exerciseName: string, setIndex: number) => `${exerciseName}-${setIndex}`;
 
+  const resolveWeight = (input: string | undefined, target: number | string): number | null => {
+    if (input && input.trim() !== "") {
+      const parsed = Number(input);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    if (typeof target === "number") {
+      return target;
+    }
+
+    const normalized = target.trim().toLowerCase();
+    if (normalized === "bw") {
+      return 0;
+    }
+
+    const parsed = Number(target);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const resolveReps = (input: string | undefined, target: number | string): number | null => {
+    const candidate = input && input.trim() !== "" ? input : String(target).replace("+", "");
+    const parsed = Number(candidate);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return null;
+    }
+    return parsed;
+  };
+
   const handleInlineChange = (key: string, field: "weight" | "reps", value: string) => {
     setInlineForms(prev => ({
       ...prev,
@@ -112,10 +140,10 @@ export default function ActiveWorkoutPage() {
     const formKey = getFormKey(exerciseName, setIndex);
     const form = inlineForms[formKey] || {};
 
-    const weight = form.weight || String(targetWeight);
-    const reps = form.reps || String(targetReps).replace('+', '');
+    const weight = resolveWeight(form.weight, targetWeight);
+    const reps = resolveReps(form.reps, targetReps);
 
-    if (!weight || !reps) return;
+    if (weight === null || reps === null) return;
 
     setSavingSet(formKey);
     try {
@@ -126,8 +154,8 @@ export default function ActiveWorkoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           exercise: exerciseName,
-          weight: parseFloat(weight),
-          reps: parseInt(reps),
+          weight,
+          reps,
           setNumber: existingSets + 1,
         }),
       });
@@ -152,6 +180,10 @@ export default function ActiveWorkoutPage() {
   const handleLogCustomSet = async () => {
     if (!customExercise.name || !customExercise.weight || !customExercise.reps) return;
 
+    const weight = Number(customExercise.weight);
+    const reps = Number(customExercise.reps);
+    if (!Number.isFinite(weight) || !Number.isFinite(reps) || reps <= 0) return;
+
     setSavingSet("custom");
     try {
       const existingSets = workout?.sets.filter(s => s.exercise === customExercise.name).length || 0;
@@ -161,8 +193,8 @@ export default function ActiveWorkoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           exercise: customExercise.name,
-          weight: parseFloat(customExercise.weight),
-          reps: parseInt(customExercise.reps),
+          weight,
+          reps,
           setNumber: existingSets + 1,
         }),
       });
@@ -242,6 +274,9 @@ export default function ActiveWorkoutPage() {
             </span>
             <span>{workout.sets.length} sets logged</span>
           </div>
+          <p className="text-[var(--text-muted)] text-xs mt-2">
+            Bodyweight movements: log 0 for bodyweight, add extra load only.
+          </p>
         </div>
         <Button onClick={handleFinishWorkout}>
           <Check className="w-4 h-4 mr-2" />

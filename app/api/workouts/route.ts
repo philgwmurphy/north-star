@@ -11,6 +11,7 @@ export async function POST(request: Request) {
     }
 
     const contentType = request.headers.get("content-type") || "";
+    const wantsJson = contentType.includes("application/json");
     let programKey: string;
     let programDay: string;
 
@@ -24,6 +25,21 @@ export async function POST(request: Request) {
       programDay = formData.get("programDay") as string;
     }
 
+    const existingWorkout = await prisma.workout.findFirst({
+      where: {
+        userId,
+        completedAt: null,
+      },
+      orderBy: { startedAt: "desc" },
+    });
+
+    if (existingWorkout) {
+      if (wantsJson) {
+        return NextResponse.json(existingWorkout);
+      }
+      return NextResponse.redirect(new URL(`/workout/${existingWorkout.id}`, request.url));
+    }
+
     const workout = await prisma.workout.create({
       data: {
         userId,
@@ -32,7 +48,9 @@ export async function POST(request: Request) {
       },
     });
 
-    // Redirect to the workout session page
+    if (wantsJson) {
+      return NextResponse.json(workout);
+    }
     return NextResponse.redirect(new URL(`/workout/${workout.id}`, request.url));
   } catch (error) {
     console.error("Error creating workout:", error);
