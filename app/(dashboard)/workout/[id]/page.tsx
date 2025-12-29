@@ -412,41 +412,41 @@ export default function ActiveWorkoutPage() {
                 ))}
                 {/* Show remaining sets to log */}
                 {completedSets.length < totalSets && (
-                  <div className="px-4 py-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                      <span className="text-[var(--text-muted)] w-16">Set {completedSets.length + 1}</span>
+                  <div className="px-4 py-3 space-y-3">
+                    <span className="text-[var(--text-muted)] text-sm">Set {completedSets.length + 1}</span>
+                    <div className="flex items-center gap-2">
                       <input
                         type="number"
                         placeholder={planned.weight || "Weight"}
-                        className="w-full sm:w-24 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                        className="flex-1 min-w-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                         value={inlineForms[getFormKey(planned.name, completedSets.length)]?.weight || ""}
                         onChange={(e) => handleInlineChange(getFormKey(planned.name, completedSets.length), "weight", e.target.value)}
                       />
-                      <span className="text-[var(--text-muted)]">x</span>
+                      <span className="text-[var(--text-muted)] shrink-0">x</span>
                       <input
                         type="number"
                         placeholder={planned.reps || "Reps"}
-                        className="w-full sm:w-20 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                        className="w-16 shrink-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                         value={inlineForms[getFormKey(planned.name, completedSets.length)]?.reps || ""}
                         onChange={(e) => handleInlineChange(getFormKey(planned.name, completedSets.length), "reps", e.target.value)}
                       />
-                      <Button
-                        size="sm"
-                        className="w-full sm:w-auto"
-                        onClick={() => {
-                          const formKey = getFormKey(planned.name, completedSets.length);
-                          const form = inlineForms[formKey];
-                          const weight = form?.weight || planned.weight;
-                          const reps = form?.reps || planned.reps;
-                          if (weight && reps) {
-                            handleLogSet(planned.name, completedSets.length, weight, reps);
-                          }
-                        }}
-                        loading={savingSet === getFormKey(planned.name, completedSets.length)}
-                      >
-                        Log
-                      </Button>
                     </div>
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        const formKey = getFormKey(planned.name, completedSets.length);
+                        const form = inlineForms[formKey];
+                        const weight = form?.weight || planned.weight;
+                        const reps = form?.reps || planned.reps;
+                        if (weight && reps) {
+                          handleLogSet(planned.name, completedSets.length, weight, reps);
+                        }
+                      }}
+                      loading={savingSet === getFormKey(planned.name, completedSets.length)}
+                    >
+                      Log
+                    </Button>
                   </div>
                 )}
                 {/* All sets completed indicator */}
@@ -503,40 +503,40 @@ export default function ActiveWorkoutPage() {
                         <Check className="w-5 h-5 text-[var(--accent-success)]" />
                       </div>
                     ))}
-                    <div className="px-4 py-3">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                        <span className="text-[var(--text-muted)] w-16">Set {completedSets.length + 1}</span>
+                    <div className="px-4 py-3 space-y-3">
+                      <span className="text-[var(--text-muted)] text-sm">Set {completedSets.length + 1}</span>
+                      <div className="flex items-center gap-2">
                         <input
                           type="number"
                           placeholder="Weight"
-                          className="w-full sm:w-24 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                          className="flex-1 min-w-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                           value={inlineForms[getFormKey(exercise.name, completedSets.length)]?.weight || ""}
                           onChange={(e) => handleInlineChange(getFormKey(exercise.name, completedSets.length), "weight", e.target.value)}
                         />
-                        <span className="text-[var(--text-muted)]">x</span>
+                        <span className="text-[var(--text-muted)] shrink-0">x</span>
                         <input
                           type="number"
                           placeholder="Reps"
-                          className="w-full sm:w-20 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                          className="w-16 shrink-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                           value={inlineForms[getFormKey(exercise.name, completedSets.length)]?.reps || ""}
                           onChange={(e) => handleInlineChange(getFormKey(exercise.name, completedSets.length), "reps", e.target.value)}
                         />
-                        <Button
-                          size="sm"
-                          className="w-full sm:w-auto"
-                          onClick={() => {
-                            const formKey = getFormKey(exercise.name, completedSets.length);
-                            const form = inlineForms[formKey];
-                            if (form?.weight && form?.reps) {
-                              handleLogSet(exercise.name, completedSets.length, form.weight, form.reps);
-                            }
-                          }}
-                          loading={savingSet === getFormKey(exercise.name, completedSets.length)}
-                          disabled={!inlineForms[getFormKey(exercise.name, completedSets.length)]?.weight || !inlineForms[getFormKey(exercise.name, completedSets.length)]?.reps}
-                        >
-                          Log
-                        </Button>
                       </div>
+                      <Button
+                        size="sm"
+                        className="w-full"
+                        onClick={() => {
+                          const formKey = getFormKey(exercise.name, completedSets.length);
+                          const form = inlineForms[formKey];
+                          if (form?.weight && form?.reps) {
+                            handleLogSet(exercise.name, completedSets.length, form.weight, form.reps);
+                          }
+                        }}
+                        loading={savingSet === getFormKey(exercise.name, completedSets.length)}
+                        disabled={!inlineForms[getFormKey(exercise.name, completedSets.length)]?.weight || !inlineForms[getFormKey(exercise.name, completedSets.length)]?.reps}
+                      >
+                        Log
+                      </Button>
                     </div>
                   </>
                 ) : (
@@ -561,38 +561,38 @@ export default function ActiveWorkoutPage() {
                             <Check className="w-5 h-5 text-[var(--accent-success)]" />
                           </div>
                         ) : (
-                          <div className="space-y-2">
+                          <div className="space-y-3">
                             <div className="flex items-center justify-between">
                               <span className="text-[var(--text-muted)] text-sm">Set {setIdx + 1}</span>
                               <span className="text-[var(--text-muted)] text-sm">
                                 Target: {targetSet.weight} x {targetSet.reps}
                               </span>
                             </div>
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                            <input
-                              type="number"
-                              placeholder={String(targetSet.weight)}
-                              className="w-full sm:flex-1 sm:min-w-0 px-2 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] text-sm focus:border-white focus:outline-none"
-                              value={form.weight || ""}
-                              onChange={(e) => handleInlineChange(formKey, "weight", e.target.value)}
-                            />
-                            <span className="text-[var(--text-muted)]">x</span>
-                            <input
-                              type="number"
-                              placeholder={String(targetSet.reps).replace('+', '')}
-                              className="w-full sm:w-16 sm:shrink-0 px-2 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] text-sm focus:border-white focus:outline-none"
-                              value={form.reps || ""}
-                              onChange={(e) => handleInlineChange(formKey, "reps", e.target.value)}
-                            />
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                placeholder={String(targetSet.weight)}
+                                className="flex-1 min-w-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                                value={form.weight || ""}
+                                onChange={(e) => handleInlineChange(formKey, "weight", e.target.value)}
+                              />
+                              <span className="text-[var(--text-muted)] shrink-0">x</span>
+                              <input
+                                type="number"
+                                placeholder={String(targetSet.reps).replace('+', '')}
+                                className="w-16 shrink-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                                value={form.reps || ""}
+                                onChange={(e) => handleInlineChange(formKey, "reps", e.target.value)}
+                              />
+                            </div>
                             <Button
                               size="sm"
-                              className="w-full sm:w-auto"
+                              className="w-full"
                               onClick={() => handleLogSet(exercise.name, setIdx, targetSet.weight, targetSet.reps)}
                               loading={savingSet === formKey}
                             >
                               Log
                             </Button>
-                          </div>
                           </div>
                         )}
                       </div>
@@ -631,40 +631,40 @@ export default function ActiveWorkoutPage() {
                       </div>
                     ))}
                     {/* Allow adding more sets */}
-                    <div className="px-4 py-3">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                        <span className="text-[var(--text-muted)] w-16">Set {sets.length + 1}</span>
+                    <div className="px-4 py-3 space-y-3">
+                      <span className="text-[var(--text-muted)] text-sm">Set {sets.length + 1}</span>
+                      <div className="flex items-center gap-2">
                         <input
                           type="number"
                           placeholder="Weight"
-                          className="w-full sm:w-24 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                          className="flex-1 min-w-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                           value={inlineForms[getFormKey(exerciseName, sets.length)]?.weight || ""}
                           onChange={(e) => handleInlineChange(getFormKey(exerciseName, sets.length), "weight", e.target.value)}
                         />
-                        <span className="text-[var(--text-muted)]">x</span>
+                        <span className="text-[var(--text-muted)] shrink-0">x</span>
                         <input
                           type="number"
                           placeholder="Reps"
-                          className="w-full sm:w-20 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                          className="w-16 shrink-0 px-3 py-2.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
                           value={inlineForms[getFormKey(exerciseName, sets.length)]?.reps || ""}
                           onChange={(e) => handleInlineChange(getFormKey(exerciseName, sets.length), "reps", e.target.value)}
                         />
-                        <Button
-                          size="sm"
-                          className="w-full sm:w-auto"
-                          onClick={() => {
-                            const formKey = getFormKey(exerciseName, sets.length);
-                            const form = inlineForms[formKey];
-                            if (form?.weight && form?.reps) {
-                              handleLogSet(exerciseName, sets.length, form.weight, form.reps);
-                            }
-                          }}
-                          loading={savingSet === getFormKey(exerciseName, sets.length)}
-                          disabled={!inlineForms[getFormKey(exerciseName, sets.length)]?.weight || !inlineForms[getFormKey(exerciseName, sets.length)]?.reps}
-                        >
-                          Log
-                        </Button>
                       </div>
+                      <Button
+                        size="sm"
+                        className="w-full"
+                        onClick={() => {
+                          const formKey = getFormKey(exerciseName, sets.length);
+                          const form = inlineForms[formKey];
+                          if (form?.weight && form?.reps) {
+                            handleLogSet(exerciseName, sets.length, form.weight, form.reps);
+                          }
+                        }}
+                        loading={savingSet === getFormKey(exerciseName, sets.length)}
+                        disabled={!inlineForms[getFormKey(exerciseName, sets.length)]?.weight || !inlineForms[getFormKey(exerciseName, sets.length)]?.reps}
+                      >
+                        Log
+                      </Button>
                     </div>
                   </div>
                 </div>
