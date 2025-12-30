@@ -46,6 +46,9 @@ export function WorkoutDetailEditor({ initialWorkout }: WorkoutDetailEditorProps
   const [showAddForm, setShowAddForm] = useState(false);
   const [newExercise, setNewExercise] = useState({ name: "", weight: "", reps: "" });
   const [cardioEntry, setCardioEntry] = useState({ name: "", hours: "", minutes: "" });
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [nameInput, setNameInput] = useState(initialWorkout.programDay || "");
+  const [savingName, setSavingName] = useState(false);
 
   const sortedSets = useMemo(() => {
     return [...workout.sets].sort((a, b) => {
@@ -269,6 +272,29 @@ export function WorkoutDetailEditor({ initialWorkout }: WorkoutDetailEditorProps
     }
   };
 
+  const handleRenameWorkout = async () => {
+    const trimmed = nameInput.trim();
+    setSavingName(true);
+    try {
+      const response = await fetch(`/api/workouts/${workout.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ programDay: trimmed === "" ? null : trimmed }),
+      });
+
+      if (response.ok) {
+        const updated = await response.json();
+        setWorkout(updated);
+        setNameInput(updated.programDay || "");
+        setIsRenaming(false);
+      }
+    } catch (error) {
+      console.error("Failed to rename workout:", error);
+    } finally {
+      setSavingName(false);
+    }
+  };
+
   const renderSetRow = (set: WorkoutSet, idx: number) => (
     <div key={set.id} className="px-4 py-3 flex items-center gap-4">
       <span className="text-[var(--text-muted)] w-16 text-sm">
@@ -425,9 +451,44 @@ export function WorkoutDetailEditor({ initialWorkout }: WorkoutDetailEditorProps
       <div className="mb-8 pb-6 border-b border-[var(--border-subtle)]">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="font-[family-name:var(--font-bebas-neue)] text-3xl tracking-wide mb-1">
-              {workout.programDay || "CUSTOM WORKOUT"}
-            </h1>
+            <div className="flex items-center gap-3 mb-1">
+              {isRenaming ? (
+                <>
+                  <input
+                    value={nameInput}
+                    onChange={(e) => setNameInput(e.target.value)}
+                    className="bg-[var(--bg-elevated)] border border-[var(--border-subtle)] px-3 py-2 text-lg font-semibold focus:border-white focus:outline-none"
+                    placeholder="Workout name"
+                  />
+                  <Button size="sm" onClick={handleRenameWorkout} loading={savingName} disabled={savingName}>
+                    Save
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setIsRenaming(false);
+                      setNameInput(workout.programDay || "");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <h1 className="font-[family-name:var(--font-bebas-neue)] text-3xl tracking-wide">
+                    {workout.programDay || "CUSTOM WORKOUT"}
+                  </h1>
+                  <button
+                    onClick={() => setIsRenaming(true)}
+                    className="text-[var(--text-muted)] hover:text-white"
+                    aria-label="Rename workout"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                </>
+              )}
+            </div>
             <p className="text-[var(--text-muted)] flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               {formattedDate}

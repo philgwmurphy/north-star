@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { searchExercises, type Exercise } from "@/lib/exercises";
 import { Search } from "lucide-react";
 
@@ -18,25 +18,22 @@ export function ExerciseAutocomplete({
   searchFn = searchExercises,
 }: ExerciseAutocompleteProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [results, setResults] = useState<Exercise[]>([]);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const newResults = searchFn(value);
-    setResults(newResults);
-    setHighlightedIndex(0);
-  }, [value, searchFn]);
+  const results = useMemo(() => searchFn(value), [value, searchFn]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value);
     setIsOpen(true);
+    setHighlightedIndex(0);
   };
 
   const handleSelect = (exercise: Exercise) => {
     onChange(exercise.name);
     setIsOpen(false);
+    setHighlightedIndex(0);
     inputRef.current?.blur();
   };
 

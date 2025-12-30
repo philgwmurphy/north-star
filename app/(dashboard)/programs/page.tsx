@@ -4,9 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { programs, getAllPrograms, type RepMaxes } from "@/lib/programs";
+import { getAllPrograms } from "@/lib/programs";
 import { calculate1RM } from "@/lib/utils";
 import { Check } from "lucide-react";
 

@@ -1,13 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { WeekSelector } from "@/components/workout/week-selector";
-import { Play, Dumbbell } from "lucide-react";
-import { type RepMaxes } from "@/lib/programs";
+import { Play } from "lucide-react";
+import { CustomStartButton } from "./custom-start-button";
 
 interface WorkoutDay {
   day: string;
@@ -23,7 +21,6 @@ interface WorkoutPageClientProps {
   hasRepMaxes: boolean;
   programName?: string;
   programKey?: string;
-  usesTrainingMax?: boolean;
   hasWeeks?: boolean;
   totalWeeks?: number;
   currentWeek?: number;
@@ -36,35 +33,12 @@ export function WorkoutPageClient({
   hasRepMaxes,
   programName,
   programKey,
-  usesTrainingMax,
   hasWeeks,
   totalWeeks,
   currentWeek,
   trainingMaxes,
   workouts,
 }: WorkoutPageClientProps) {
-  const router = useRouter();
-  const [isStartingCustom, setIsStartingCustom] = useState(false);
-
-  const startCustomWorkout = async () => {
-    setIsStartingCustom(true);
-    try {
-      const response = await fetch("/api/workouts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ programKey: null, programDay: null }),
-      });
-
-      if (response.ok) {
-        const workout = await response.json();
-        router.push(`/workout/${workout.id}`);
-      }
-    } catch (error) {
-      console.error("Failed to start custom workout:", error);
-      setIsStartingCustom(false);
-    }
-  };
-
   // No program selected - show simple start options
   if (!hasProgram || !hasRepMaxes) {
     return (
@@ -80,27 +54,7 @@ export function WorkoutPageClient({
             </Link>
           </p>
         </div>
-        <button
-          onClick={startCustomWorkout}
-          disabled={isStartingCustom}
-          className="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] p-6 text-left hover:border-[var(--border-active)] transition-colors disabled:opacity-50"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold mb-1">Custom Workout</h3>
-              <p className="text-sm text-[var(--text-muted)]">
-                Add exercises as you go
-              </p>
-            </div>
-            <div className="w-10 h-10 bg-[var(--bg-elevated)] flex items-center justify-center">
-              {isStartingCustom ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent animate-spin" />
-              ) : (
-                <Dumbbell className="w-5 h-5" />
-              )}
-            </div>
-          </div>
-        </button>
+        <CustomStartButton />
       </div>
     );
   }
@@ -143,18 +97,7 @@ export function WorkoutPageClient({
 
       {/* Custom Workout Button */}
       <div className="mb-8">
-        <button
-          onClick={startCustomWorkout}
-          disabled={isStartingCustom}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 border border-dashed border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-white hover:border-white transition-colors disabled:opacity-50"
-        >
-          {isStartingCustom ? (
-            <div className="w-4 h-4 border-2 border-current border-t-transparent animate-spin" />
-          ) : (
-            <Dumbbell className="w-4 h-4" />
-          )}
-          Start Custom Workout
-        </button>
+        <CustomStartButton variant="inline" />
       </div>
 
       {/* Workout Days */}
