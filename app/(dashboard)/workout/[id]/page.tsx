@@ -60,11 +60,6 @@ export default function ActiveWorkoutPage() {
   const [savingName, setSavingName] = useState(false);
   const [templateExercises, setTemplateExercises] = useState<string[]>([]);
   const [templateName, setTemplateName] = useState<string | null>(null);
-  const [restDuration, setRestDuration] = useState(180);
-  const [remainingSeconds, setRemainingSeconds] = useState(180);
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [timerEnd, setTimerEnd] = useState<number | null>(null);
-  const baseRestDuration = Math.max(10, restDuration);
 
   // Track inline form state per exercise/set
   const [inlineForms, setInlineForms] = useState<Record<string, InlineFormState>>({});
