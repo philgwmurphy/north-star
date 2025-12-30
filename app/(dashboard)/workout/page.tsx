@@ -59,7 +59,6 @@ export default async function WorkoutPage() {
       hasRepMaxes={hasRepMaxes}
       programName={program.name}
       programKey={selectedProgram}
-      usesTrainingMax={program.usesTrainingMax}
       hasWeeks={program.hasWeeks}
       totalWeeks={program.totalWeeks}
       currentWeek={user.currentWeek}

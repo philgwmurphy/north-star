@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { QuickStartButton } from "@/components/workout/quick-start-button";
 import { CustomStartButton } from "@/components/workout/custom-start-button";
 import { Button } from "@/components/ui/button";
@@ -15,11 +15,9 @@ interface QuickStartSectionProps {
 const dismissKey = "northstar-dismiss-get-started";
 
 export function QuickStartSection({ programKey, repMaxes, nextDay }: QuickStartSectionProps) {
-  const [dismissed, setDismissed] = useState(false);
-
-  useEffect(() => {
-    setDismissed(localStorage.getItem(dismissKey) === "1");
-  }, []);
+  const [dismissed, setDismissed] = useState(
+    typeof window !== "undefined" && localStorage.getItem(dismissKey) === "1"
+  );
 
   const handleDismiss = () => {
     localStorage.setItem(dismissKey, "1");
