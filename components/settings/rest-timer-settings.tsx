@@ -15,12 +15,15 @@ export function RestTimerSettings({ defaultSeconds }: RestTimerSettingsProps) {
     const parsed = Number(seconds);
     if (!Number.isFinite(parsed)) return;
 
+    const snapped = Math.round(parsed / 15) * 15;
+    setSeconds(String(snapped));
+
     setSaving(true);
     try {
       await fetch("/api/user/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ restTimerDefault: parsed }),
+        body: JSON.stringify({ restTimerDefault: snapped }),
       });
     } catch (error) {
       console.error("Failed to update rest timer:", error);
@@ -37,6 +40,7 @@ export function RestTimerSettings({ defaultSeconds }: RestTimerSettingsProps) {
           type="number"
           min={30}
           max={600}
+          step={15}
           value={seconds}
           onChange={(e) => setSeconds(e.target.value)}
           className="mt-2 w-full max-w-[200px] px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"

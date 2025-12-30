@@ -37,7 +37,8 @@ export async function PATCH(request: Request) {
     }
 
     if (typeof body.restTimerDefault === "number") {
-      data.restTimerDefault = Math.max(30, Math.min(600, Math.round(body.restTimerDefault)));
+      const snapped = Math.round(body.restTimerDefault / 15) * 15;
+      data.restTimerDefault = Math.max(30, Math.min(600, snapped));
     }
 
     if (Object.keys(data).length === 0) {
