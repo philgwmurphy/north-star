@@ -15,17 +15,39 @@ export async function POST(request: Request) {
     let programKey: string | null = null;
     let programDay: string | null = null;
     let workoutName: string | null = null;
+    let templateWorkoutId: string | null = null;
 
     if (contentType.includes("application/json")) {
       const body = await request.json();
       programKey = body.programKey || null;
       programDay = body.programDay || null;
       workoutName = body.workoutName || null;
+      templateWorkoutId = body.templateWorkoutId || null;
     } else {
       const formData = await request.formData();
       programKey = (formData.get("programKey") as string) || null;
       programDay = (formData.get("programDay") as string) || null;
       workoutName = (formData.get("workoutName") as string) || null;
+      templateWorkoutId = (formData.get("templateWorkoutId") as string) || null;
+    }
+
+    let templateWorkout: { programDay: string | null } | null = null;
+
+    if (templateWorkoutId) {
+      templateWorkout = await prisma.workout.findFirst({
+        where: {
+          id: templateWorkoutId,
+          userId,
+          programKey: null,
+        },
+        select: {
+          programDay: true,
+        },
+      });
+
+      if (!templateWorkout) {
+        return NextResponse.json({ error: "Template workout not found" }, { status: 404 });
+      }
     }
 
     const existingWorkout = await prisma.workout.findFirst({
@@ -48,7 +70,7 @@ export async function POST(request: Request) {
       data: {
         userId,
         programKey: programKey || null,
-        programDay: programDay || workoutName || null,
+        programDay: programDay || workoutName || templateWorkout?.programDay || null,
       },
     });
 

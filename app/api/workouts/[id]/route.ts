@@ -94,6 +94,11 @@ export async function PATCH(
         userId,
       },
       data,
+      include: {
+        sets: {
+          orderBy: { completedAt: "asc" },
+        },
+      },
     });
 
     return NextResponse.json(workout);

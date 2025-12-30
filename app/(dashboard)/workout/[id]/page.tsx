@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { programs, type RepMaxes, type WorkoutSet as ProgramSet } from "@/lib/programs";
 import { formatDuration, formatDurationSeconds } from "@/lib/utils";
@@ -44,6 +44,7 @@ interface InlineFormState {
 export default function ActiveWorkoutPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const workoutId = params.id as string;
 
   const [workout, setWorkout] = useState<Workout | null>(null);
@@ -51,6 +52,11 @@ export default function ActiveWorkoutPage() {
   const [loading, setLoading] = useState(true);
   const [elapsedTime, setElapsedTime] = useState("");
   const [savingSet, setSavingSet] = useState<string | null>(null);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+  const [savingName, setSavingName] = useState(false);
+  const [templateExercises, setTemplateExercises] = useState<string[]>([]);
+  const [templateName, setTemplateName] = useState<string | null>(null);
 
   // Track inline form state per exercise/set
   const [inlineForms, setInlineForms] = useState<Record<string, InlineFormState>>({});
@@ -81,6 +87,7 @@ export default function ActiveWorkoutPage() {
         if (workoutRes.ok) {
           const workoutData = await workoutRes.json();
           setWorkout(workoutData);
+          setNameInput(workoutData.programDay || "");
         } else {
           router.push("/workout");
           return;
@@ -98,6 +105,31 @@ export default function ActiveWorkoutPage() {
     }
     fetchData();
   }, [workoutId, router]);
+
+  const templateWorkoutId = searchParams.get("template");
+
+  useEffect(() => {
+    async function loadTemplate(templateId: string) {
+      try {
+        const res = await fetch(`/api/workouts/${templateId}`);
+        if (!res.ok) return;
+        const template = await res.json();
+        setTemplateName(template.programDay || null);
+        const exercises = Array.from(
+          new Set(
+            (template.sets as Array<{ exercise: string }> | undefined)?.map((set) => set.exercise) || []
+          )
+        );
+        setTemplateExercises(exercises);
+      } catch (error) {
+        console.error("Failed to load template workout:", error);
+      }
+    }
+
+    if (templateWorkoutId) {
+      loadTemplate(templateWorkoutId);
+    }
+  }, [templateWorkoutId]);
 
   // Update elapsed time
   useEffect(() => {
@@ -389,6 +421,29 @@ export default function ActiveWorkoutPage() {
     }
   };
 
+  const handleRenameWorkout = async () => {
+    const trimmed = nameInput.trim();
+    setSavingName(true);
+    try {
+      const response = await fetch(`/api/workouts/${workoutId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ programDay: trimmed === "" ? null : trimmed }),
+      });
+
+      if (response.ok) {
+        const updated = await response.json();
+        setWorkout(updated);
+        setNameInput(updated.programDay || "");
+        setIsRenaming(false);
+      }
+    } catch (error) {
+      console.error("Failed to rename workout:", error);
+    } finally {
+      setSavingName(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -420,6 +475,9 @@ export default function ActiveWorkoutPage() {
     acc[set.exercise].push(set);
     return acc;
   }, {} as Record<string, WorkoutSet[]>);
+  const allExerciseNames = isCustomWorkout
+    ? Array.from(new Set([...Object.keys(setsByExercise), ...templateExercises]))
+    : Object.keys(setsByExercise);
   const totalCardioSeconds = workout.sets.reduce(
     (sum, set) => sum + (set.durationSeconds || 0),
     0
@@ -603,22 +661,68 @@ export default function ActiveWorkoutPage() {
               Custom Workout
             </p>
           )}
-          <h1 className="font-[family-name:var(--font-bebas-neue)] text-3xl tracking-wide">
-            {workout.programDay || "WORKOUT"}
-          </h1>
-      <div className="flex items-center gap-4 text-[var(--text-muted)] text-sm mt-1">
-        <span className="flex items-center gap-1">
-          <Clock className="w-4 h-4" />
-          {elapsedTime}
-        </span>
-        <span>{workout.sets.length} sets logged</span>
-        {totalCardioSeconds > 0 && (
-          <span>{formatDurationSeconds(totalCardioSeconds)} cardio</span>
-        )}
-      </div>
-      <p className="text-[var(--text-muted)] text-xs mt-2">
-        All weights are in lbs. Bodyweight movements: log 0 for bodyweight, add extra load only.
-      </p>
+          {isCustomWorkout ? (
+            <div className="flex items-center gap-3">
+              {isRenaming ? (
+                <>
+                  <input
+                    value={nameInput}
+                    onChange={(e) => setNameInput(e.target.value)}
+                    className="bg-[var(--bg-elevated)] border border-[var(--border-subtle)] px-3 py-2 text-lg font-semibold focus:border-white focus:outline-none"
+                    placeholder="Workout name"
+                  />
+                  <Button size="sm" onClick={handleRenameWorkout} loading={savingName} disabled={savingName}>
+                    Save
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setIsRenaming(false);
+                      setNameInput(workout.programDay || "");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <h1 className="font-[family-name:var(--font-bebas-neue)] text-3xl tracking-wide">
+                    {workout.programDay || "WORKOUT"}
+                  </h1>
+                  <button
+                    onClick={() => setIsRenaming(true)}
+                    className="text-[var(--text-muted)] hover:text-white"
+                    aria-label="Rename workout"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                </>
+              )}
+            </div>
+          ) : (
+            <h1 className="font-[family-name:var(--font-bebas-neue)] text-3xl tracking-wide">
+              {workout.programDay || "WORKOUT"}
+            </h1>
+          )}
+          {templateWorkoutId && templateName && (
+            <p className="text-[var(--text-muted)] text-xs mt-1">
+              Started from template: <span className="text-white">{templateName}</span>
+            </p>
+          )}
+          <div className="flex items-center gap-4 text-[var(--text-muted)] text-sm mt-1">
+            <span className="flex items-center gap-1">
+              <Clock className="w-4 h-4" />
+              {elapsedTime}
+            </span>
+            <span>{workout.sets.length} sets logged</span>
+            {totalCardioSeconds > 0 && (
+              <span>{formatDurationSeconds(totalCardioSeconds)} cardio</span>
+            )}
+          </div>
+          <p className="text-[var(--text-muted)] text-xs mt-2">
+            All weights are in lbs. Bodyweight movements: log 0 for bodyweight, add extra load only.
+          </p>
         </div>
         <Button onClick={handleFinishWorkout}>
           <Check className="w-4 h-4 mr-2" />
@@ -629,17 +733,23 @@ export default function ActiveWorkoutPage() {
       {/* Exercises */}
       <div className="space-y-8">
         {/* Custom Workout: Show logged exercises */}
-        {isCustomWorkout && Object.entries(setsByExercise).map(([exerciseName, sets]) => (
-          <div key={exerciseName} className="border border-[var(--border-subtle)]">
-            <div className="bg-[var(--bg-surface)] px-4 py-3 border-b border-[var(--border-subtle)]">
-              <h3 className="font-bold text-lg">{exerciseName}</h3>
+        {isCustomWorkout && allExerciseNames.map((exerciseName) => {
+          const sets = setsByExercise[exerciseName] || [];
+          return (
+            <div key={exerciseName} className="border border-[var(--border-subtle)]">
+              <div className="bg-[var(--bg-surface)] px-4 py-3 border-b border-[var(--border-subtle)]">
+                <h3 className="font-bold text-lg">{exerciseName}</h3>
+                {!sets.length && (
+                  <p className="text-sm text-[var(--text-muted)]">Template exercise — log your first set</p>
+                )}
+              </div>
+              <div className="divide-y divide-[var(--border-subtle)]">
+                {sets.map((set, idx) => renderSetRow(set, idx))}
+                {renderAddSetForm(exerciseName, sets.length)}
+              </div>
             </div>
-            <div className="divide-y divide-[var(--border-subtle)]">
-              {sets.map((set, idx) => renderSetRow(set, idx))}
-              {renderAddSetForm(exerciseName, sets.length)}
-            </div>
-          </div>
-        ))}
+          );
+        })}
 
         {/* Custom Workout: Add Exercise Button/Form */}
         {isCustomWorkout && (
