@@ -8,6 +8,7 @@ import { formatDuration, formatDurationSeconds } from "@/lib/utils";
 import { Check, Clock, Plus, Trash2, Pencil, X } from "lucide-react";
 import { ExerciseAutocomplete } from "@/components/ui/exercise-autocomplete";
 import { searchCardioExercises } from "@/lib/exercises";
+import { RestTimer } from "@/components/workout/rest-timer";
 
 interface WorkoutSet {
   id: string;
@@ -21,10 +22,22 @@ interface WorkoutSet {
   completedAt: string;
 }
 
+interface TemplateExerciseSet {
+  weight: number;
+  reps: number;
+  durationSeconds?: number | null;
+}
+
+interface TemplateExercise {
+  name: string;
+  sets: TemplateExerciseSet[];
+}
+
 interface Workout {
   id: string;
   programKey: string | null;
   programDay: string | null;
+  template?: { id: string; name: string; exercises: TemplateExercise[] } | null;
   startedAt: string;
   completedAt: string | null;
   sets: WorkoutSet[];
@@ -33,6 +46,7 @@ interface Workout {
 interface UserData {
   currentWeek: number;
   repMaxes: { exercise: string; oneRM: number }[];
+  settings?: { restTimerDefault?: number | null } | null;
 }
 
 interface InlineFormState {
@@ -52,6 +66,8 @@ export default function ActiveWorkoutPage() {
   const [loading, setLoading] = useState(true);
   const [elapsedTime, setElapsedTime] = useState("");
   const [savingSet, setSavingSet] = useState<string | null>(null);
+  const [restTrigger, setRestTrigger] = useState(0);
+  const [restDuration, setRestDuration] = useState(180);
   const [isRenaming, setIsRenaming] = useState(false);
   const [nameInput, setNameInput] = useState("");
   const [savingName, setSavingName] = useState(false);
@@ -96,6 +112,8 @@ export default function ActiveWorkoutPage() {
         if (userRes.ok) {
           const user = await userRes.json();
           setUserData(user);
+          const defaultRest = user.settings?.restTimerDefault ?? 180;
+          setRestDuration(defaultRest);
         }
       } catch (error) {
         console.error("Failed to fetch data:", error);
@@ -144,7 +162,8 @@ export default function ActiveWorkoutPage() {
     return () => clearInterval(interval);
   }, [workout]);
 
-  const isCustomWorkout = !workout?.programKey;
+  const hasTemplate = !!workout?.template?.exercises && (workout?.template?.exercises?.length || 0) > 0;
+  const isCustomWorkout = !workout?.programKey && !hasTemplate;
 
   const getFormKey = (exerciseName: string, setIndex: number) => `${exerciseName}-${setIndex}`;
 
@@ -212,6 +231,7 @@ export default function ActiveWorkoutPage() {
       if (response.ok) {
         const newSet = await response.json();
         setWorkout(prev => prev ? { ...prev, sets: [...prev.sets, newSet] } : prev);
+        setRestTrigger((prev) => prev + 1);
         // Clear the form
         setInlineForms(prev => {
           const updated = { ...prev };
@@ -253,6 +273,7 @@ export default function ActiveWorkoutPage() {
       if (response.ok) {
         const newSet = await response.json();
         setWorkout(prev => prev ? { ...prev, sets: [...prev.sets, newSet] } : prev);
+        setRestTrigger((prev) => prev + 1);
         // Clear the form for adding a different exercise
         setNewExercise({ name: "", weight: "", reps: "", rpe: "" });
       }
@@ -291,6 +312,7 @@ export default function ActiveWorkoutPage() {
         const newSet = await response.json();
         setWorkout(prev => prev ? { ...prev, sets: [...prev.sets, newSet] } : prev);
         setCardioEntry({ name: "", hours: "", minutes: "" });
+        setRestTrigger((prev) => prev + 1);
       }
     } catch (error) {
       console.error("Failed to log cardio:", error);
@@ -468,6 +490,10 @@ export default function ActiveWorkoutPage() {
         ?.getWorkouts(repMaxes, userData?.currentWeek || 1)
         .find((w) => w.day === workout.programDay)?.exercises || []
     : [];
+  const templatePlanExercises: TemplateExercise[] = Array.isArray(workout.template?.exercises)
+    ? workout.template?.exercises
+    : [];
+  const plannedExercises = workout.programKey ? programExercises : templatePlanExercises;
 
   // Group completed sets by exercise
   const setsByExercise = workout.sets.reduce((acc, set) => {
@@ -647,87 +673,93 @@ export default function ActiveWorkoutPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8 pb-6 border-b border-[var(--border-subtle)]">
-        <div>
-          {workout.programKey && programs[workout.programKey] ? (
-            <p className="text-[var(--text-muted)] text-sm uppercase tracking-wider mb-1">
-              {programs[workout.programKey].name}
-              {programs[workout.programKey].hasWeeks && userData?.currentWeek && (
-                <span className="ml-2">Week {userData.currentWeek}</span>
-              )}
-            </p>
-          ) : (
-            <p className="text-[var(--text-muted)] text-sm uppercase tracking-wider mb-1">
-              Custom Workout
-            </p>
-          )}
-          {isCustomWorkout ? (
-            <div className="flex items-center gap-3">
-              {isRenaming ? (
-                <>
-                  <input
-                    value={nameInput}
-                    onChange={(e) => setNameInput(e.target.value)}
-                    className="bg-[var(--bg-elevated)] border border-[var(--border-subtle)] px-3 py-2 text-lg font-semibold focus:border-white focus:outline-none"
-                    placeholder="Workout name"
-                  />
-                  <Button size="sm" onClick={handleRenameWorkout} loading={savingName} disabled={savingName}>
-                    Save
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      setIsRenaming(false);
-                      setNameInput(workout.programDay || "");
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <h1 className="font-[family-name:var(--font-bebas-neue)] text-3xl tracking-wide">
-                    {workout.programDay || "WORKOUT"}
-                  </h1>
-                  <button
-                    onClick={() => setIsRenaming(true)}
-                    className="text-[var(--text-muted)] hover:text-white"
-                    aria-label="Rename workout"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                </>
+      <div className="flex flex-col gap-4 mb-8 pb-6 border-b border-[var(--border-subtle)]">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            {workout.programKey && programs[workout.programKey] ? (
+              <p className="text-[var(--text-muted)] text-sm uppercase tracking-wider mb-1">
+                {programs[workout.programKey].name}
+                {programs[workout.programKey].hasWeeks && userData?.currentWeek && (
+                  <span className="ml-2">Week {userData.currentWeek}</span>
+                )}
+              </p>
+            ) : (
+              <p className="text-[var(--text-muted)] text-sm uppercase tracking-wider mb-1">
+                {hasTemplate ? "Template Workout" : "Custom Workout"}
+              </p>
+            )}
+            {isCustomWorkout ? (
+              <div className="flex items-center gap-3">
+                {isRenaming ? (
+                  <>
+                    <input
+                      value={nameInput}
+                      onChange={(e) => setNameInput(e.target.value)}
+                      className="bg-[var(--bg-elevated)] border border-[var(--border-subtle)] px-3 py-2 text-lg font-semibold focus:border-white focus:outline-none"
+                      placeholder="Workout name"
+                    />
+                    <Button size="sm" onClick={handleRenameWorkout} loading={savingName} disabled={savingName}>
+                      Save
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setIsRenaming(false);
+                        setNameInput(workout.programDay || "");
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <h1 className="font-[family-name:var(--font-bebas-neue)] text-3xl tracking-wide">
+                      {workout.programDay || "WORKOUT"}
+                    </h1>
+                    <button
+                      onClick={() => setIsRenaming(true)}
+                      className="text-[var(--text-muted)] hover:text-white"
+                      aria-label="Rename workout"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+              </div>
+            ) : (
+              <h1 className="font-[family-name:var(--font-bebas-neue)] text-3xl tracking-wide">
+                {workout.programDay || "WORKOUT"}
+              </h1>
+            )}
+            {templateWorkoutId && templateName && (
+              <p className="text-[var(--text-muted)] text-xs mt-1">
+                Started from template: <span className="text-white">{templateName}</span>
+              </p>
+            )}
+            <div className="flex items-center gap-4 text-[var(--text-muted)] text-sm mt-1">
+              <span className="flex items-center gap-1">
+                <Clock className="w-4 h-4" />
+                {elapsedTime}
+              </span>
+              <span>{workout.sets.length} sets logged</span>
+              {totalCardioSeconds > 0 && (
+                <span>{formatDurationSeconds(totalCardioSeconds)} cardio</span>
               )}
             </div>
-          ) : (
-            <h1 className="font-[family-name:var(--font-bebas-neue)] text-3xl tracking-wide">
-              {workout.programDay || "WORKOUT"}
-            </h1>
-          )}
-          {templateWorkoutId && templateName && (
-            <p className="text-[var(--text-muted)] text-xs mt-1">
-              Started from template: <span className="text-white">{templateName}</span>
+            <p className="text-[var(--text-muted)] text-xs mt-2">
+              All weights are in lbs. Bodyweight movements: log 0 for bodyweight, add extra load only.
             </p>
-          )}
-          <div className="flex items-center gap-4 text-[var(--text-muted)] text-sm mt-1">
-            <span className="flex items-center gap-1">
-              <Clock className="w-4 h-4" />
-              {elapsedTime}
-            </span>
-            <span>{workout.sets.length} sets logged</span>
-            {totalCardioSeconds > 0 && (
-              <span>{formatDurationSeconds(totalCardioSeconds)} cardio</span>
-            )}
           </div>
-          <p className="text-[var(--text-muted)] text-xs mt-2">
-            All weights are in lbs. Bodyweight movements: log 0 for bodyweight, add extra load only.
-          </p>
+          <Button onClick={handleFinishWorkout}>
+            <Check className="w-4 h-4 mr-2" />
+            Finish Workout
+          </Button>
         </div>
-        <Button onClick={handleFinishWorkout}>
-          <Check className="w-4 h-4 mr-2" />
-          Finish Workout
-        </Button>
+        <RestTimer
+          defaultSeconds={restDuration}
+          triggerKey={restTrigger}
+        />
       </div>
 
       {/* Exercises */}
@@ -864,12 +896,12 @@ export default function ActiveWorkoutPage() {
         </div>
 
         {/* Program Workout: Show program exercises */}
-        {!isCustomWorkout && programExercises.map((exercise, exIdx) => {
+        {!isCustomWorkout && plannedExercises.map((exercise, exIdx) => {
           const completedSets = setsByExercise[exercise.name] || [];
           const targetSets: ProgramSet[] = Array.isArray(exercise.sets)
-            ? exercise.sets
+            ? exercise.sets.filter((set) => !(set as TemplateExerciseSet).durationSeconds)
             : [];
-          const isStringFormat = typeof exercise.sets === "string";
+          const isStringFormat = typeof exercise.sets === "string" || targetSets.length === 0;
 
           return (
             <div key={exIdx} className="border border-[var(--border-subtle)]">
@@ -1088,7 +1120,7 @@ export default function ActiveWorkoutPage() {
 
             {/* Show logged custom exercises */}
             {Object.entries(setsByExercise)
-              .filter(([name]) => !programExercises.some(e => e.name === name))
+              .filter(([name]) => !plannedExercises.some(e => e.name === name))
               .map(([exerciseName, sets]) => (
                 <div key={exerciseName} className="border-t border-[var(--border-subtle)]">
                   <div className="px-4 py-2 text-sm font-medium">{exerciseName}</div>

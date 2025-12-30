@@ -16,6 +16,7 @@ export async function POST(request: Request) {
     let programDay: string | null = null;
     let workoutName: string | null = null;
     let templateWorkoutId: string | null = null;
+    let templateId: string | null = null;
 
     if (contentType.includes("application/json")) {
       const body = await request.json();
@@ -23,12 +24,14 @@ export async function POST(request: Request) {
       programDay = body.programDay || null;
       workoutName = body.workoutName || null;
       templateWorkoutId = body.templateWorkoutId || null;
+      templateId = body.templateId || null;
     } else {
       const formData = await request.formData();
       programKey = (formData.get("programKey") as string) || null;
       programDay = (formData.get("programDay") as string) || null;
       workoutName = (formData.get("workoutName") as string) || null;
       templateWorkoutId = (formData.get("templateWorkoutId") as string) || null;
+      templateId = (formData.get("templateId") as string) || null;
     }
 
     let templateWorkout: { programDay: string | null } | null = null;
@@ -65,12 +68,30 @@ export async function POST(request: Request) {
       return NextResponse.redirect(new URL(`/workout/${existingWorkout.id}`, request.url));
     }
 
+    let resolvedTemplateId: string | null = null;
+    let resolvedProgramDay: string | null = programDay || workoutName || templateWorkout?.programDay || null;
+
+    if (templateId) {
+      const template = await prisma.workoutTemplate.findFirst({
+        where: { id: templateId, userId },
+        select: { id: true, name: true },
+      });
+
+      if (!template) {
+        return NextResponse.json({ error: "Template not found" }, { status: 404 });
+      }
+
+      resolvedTemplateId = template.id;
+      resolvedProgramDay = template.name;
+    }
+
     // For custom workouts, use workoutName as programDay for display
     const workout = await prisma.workout.create({
       data: {
         userId,
         programKey: programKey || null,
-        programDay: programDay || workoutName || templateWorkout?.programDay || null,
+        programDay: resolvedProgramDay,
+        templateId: resolvedTemplateId,
       },
     });
 

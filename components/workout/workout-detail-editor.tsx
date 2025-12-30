@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ExerciseAutocomplete } from "@/components/ui/exercise-autocomplete";
 import { formatDurationSeconds } from "@/lib/utils";
-import { ArrowLeft, Calendar, Check, Clock, Pencil, Trash2, X } from "lucide-react";
+import { ArrowLeft, Calendar, Check, Clock, Pencil, Trash2, X, Copy, BookmarkPlus } from "lucide-react";
 
 interface WorkoutSet {
   id: string;
@@ -33,6 +34,7 @@ interface WorkoutDetailEditorProps {
 }
 
 export function WorkoutDetailEditor({ initialWorkout }: WorkoutDetailEditorProps) {
+  const router = useRouter();
   const [workout, setWorkout] = useState<WorkoutData>(initialWorkout);
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
   const [editingSetIsCardio, setEditingSetIsCardio] = useState(false);
@@ -295,6 +297,35 @@ export function WorkoutDetailEditor({ initialWorkout }: WorkoutDetailEditorProps
     }
   };
 
+  const handleSaveTemplate = async () => {
+    try {
+      const response = await fetch(`/api/workouts/${workout.id}/template`, {
+        method: "POST",
+      });
+
+      if (response.ok) {
+        alert("Template saved.");
+      }
+    } catch (error) {
+      console.error("Failed to save template:", error);
+    }
+  };
+
+  const handleCloneWorkout = async () => {
+    try {
+      const response = await fetch(`/api/workouts/${workout.id}/clone`, {
+        method: "POST",
+      });
+
+      if (response.ok) {
+        const newWorkout = await response.json();
+        router.push(`/workout/${newWorkout.id}`);
+      }
+    } catch (error) {
+      console.error("Failed to clone workout:", error);
+    }
+  };
+
   const renderSetRow = (set: WorkoutSet, idx: number) => (
     <div key={set.id} className="px-4 py-3 flex items-center gap-4">
       <span className="text-[var(--text-muted)] w-16 text-sm">
@@ -494,15 +525,25 @@ export function WorkoutDetailEditor({ initialWorkout }: WorkoutDetailEditorProps
               {formattedDate}
             </p>
           </div>
-          {workout.completedAt ? (
-            <span className="text-xs text-[var(--accent-success)] border border-[var(--accent-success)] px-2 py-1">
-              Completed
-            </span>
-          ) : (
-            <span className="text-xs text-[var(--accent-warning)] border border-[var(--accent-warning)] px-2 py-1">
-              In Progress
-            </span>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" variant="outline" onClick={handleSaveTemplate}>
+              <BookmarkPlus className="w-4 h-4 mr-2" />
+              Save Template
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleCloneWorkout}>
+              <Copy className="w-4 h-4 mr-2" />
+              Clone
+            </Button>
+            {workout.completedAt ? (
+              <span className="text-xs text-[var(--accent-success)] border border-[var(--accent-success)] px-2 py-1">
+                Completed
+              </span>
+            ) : (
+              <span className="text-xs text-[var(--accent-warning)] border border-[var(--accent-warning)] px-2 py-1">
+                In Progress
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-6 mt-4 text-sm">

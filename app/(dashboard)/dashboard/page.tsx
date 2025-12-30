@@ -7,6 +7,7 @@ import { BodyWeightQuickEntry } from "@/components/body-weight/quick-entry";
 import { prisma } from "@/lib/db";
 import { programs, type RepMaxes } from "@/lib/programs";
 import { formatDuration, formatRelativeTime } from "@/lib/utils";
+import { computeRecoveryScores } from "@/lib/recovery";
 
 async function getUserData(userId: string) {
   return await prisma.user.findUnique({
@@ -69,6 +70,22 @@ async function getActiveWorkout(userId: string) {
   });
 }
 
+async function getRecoverySets(userId: string) {
+  return await prisma.workoutSet.findMany({
+    where: { workout: { userId } },
+    select: {
+      workoutId: true,
+      exercise: true,
+      weight: true,
+      reps: true,
+      durationSeconds: true,
+      completedAt: true,
+    },
+    orderBy: { completedAt: "desc" },
+    take: 500,
+  });
+}
+
 export default async function HomePage() {
   const { userId } = await auth();
 
@@ -76,10 +93,11 @@ export default async function HomePage() {
     redirect("/sign-in");
   }
 
-  const [user, activeWorkout, latestBodyWeight] = await Promise.all([
+  const [user, activeWorkout, latestBodyWeight, recoverySets] = await Promise.all([
     getUserData(userId),
     getActiveWorkout(userId),
     getLatestBodyWeight(userId),
+    getRecoverySets(userId),
   ]);
 
   // Convert rep maxes array to object
@@ -92,6 +110,13 @@ export default async function HomePage() {
 
   const program = user?.selectedProgram ? programs[user.selectedProgram] : null;
   const nextDay = program?.getWorkouts(repMaxes || { squat: 0, bench: 0, deadlift: 0, ohp: 0 })[0]?.day;
+  const recoveryScores = computeRecoveryScores(
+    recoverySets.map((set) => ({
+      ...set,
+      completedAt: set.completedAt,
+      durationSeconds: set.durationSeconds ?? null,
+    }))
+  );
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -176,6 +201,39 @@ export default async function HomePage() {
           defaultUnit={user?.settings?.weightUnit || "lbs"}
         />
       </section>
+
+      {recoveryScores.length > 0 && (
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold">Recovery Snapshot</h2>
+            <span className="text-xs text-[var(--text-muted)]">Estimated</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {recoveryScores.slice(0, 6).map((score) => (
+              <div
+                key={score.category}
+                className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] p-4"
+              >
+                <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">
+                  {score.category}
+                </div>
+                <div className="font-[family-name:var(--font-bebas-neue)] text-3xl">
+                  {score.score}%
+                </div>
+                <div className="text-xs text-[var(--text-muted)]">
+                  Last trained {formatRelativeTime(score.lastTrainedAt)}
+                </div>
+                <div className="mt-2 h-1 bg-[var(--bg-elevated)]">
+                  <div
+                    className="h-full bg-[var(--accent-primary)]"
+                    style={{ width: `${score.score}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Recent Workouts */}
       {user?.workouts && user.workouts.length > 0 && (

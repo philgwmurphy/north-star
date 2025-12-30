@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { WeekSelector } from "@/components/workout/week-selector";
-import { Play } from "lucide-react";
+import { Play, Edit3, Save, Trash2 } from "lucide-react";
 import { CustomStartButton } from "./custom-start-button";
 
 interface WorkoutDay {
@@ -26,6 +28,13 @@ interface WorkoutPageClientProps {
   currentWeek?: number;
   trainingMaxes?: { squat: number; bench: number; deadlift: number; ohp: number } | null;
   workouts?: WorkoutDay[];
+  templates?: WorkoutTemplate[];
+}
+
+interface WorkoutTemplate {
+  id: string;
+  name: string;
+  exercises: unknown[];
 }
 
 export function WorkoutPageClient({
@@ -38,7 +47,121 @@ export function WorkoutPageClient({
   currentWeek,
   trainingMaxes,
   workouts,
+  templates = [],
 }: WorkoutPageClientProps) {
+  const router = useRouter();
+  const [templateList, setTemplateList] = useState(templates);
+
+  const startTemplateWorkout = async (templateId: string) => {
+    try {
+      const response = await fetch("/api/workouts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ templateId }),
+      });
+
+      if (response.ok) {
+        const workout = await response.json();
+        router.push(`/workout/${workout.id}`);
+      }
+    } catch (error) {
+      console.error("Failed to start template workout:", error);
+    }
+  };
+
+  const handleRenameTemplate = async (templateId: string, name: string) => {
+    try {
+      const response = await fetch(`/api/templates/${templateId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+
+      if (response.ok) {
+        const updated = await response.json();
+        setTemplateList((prev) => prev.map((tpl) => (tpl.id === templateId ? updated : tpl)));
+      }
+    } catch (error) {
+      console.error("Failed to rename template:", error);
+    }
+  };
+
+  const handleDeleteTemplate = async (templateId: string) => {
+    if (!confirm("Delete this template?")) return;
+
+    try {
+      const response = await fetch(`/api/templates/${templateId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setTemplateList((prev) => prev.filter((tpl) => tpl.id !== templateId));
+      }
+    } catch (error) {
+      console.error("Failed to delete template:", error);
+    }
+  };
+
+  const TemplateCard = ({ template }: { template: WorkoutTemplate }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [name, setName] = useState(template.name);
+
+    return (
+      <div className="border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 space-y-3">
+        {isEditing ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] focus:border-white focus:outline-none"
+            />
+            <Button
+              size="sm"
+              onClick={() => {
+                const trimmed = name.trim();
+                if (!trimmed) return;
+                handleRenameTemplate(template.id, trimmed);
+                setIsEditing(false);
+              }}
+            >
+              <Save className="w-4 h-4 mr-1" />
+              Save
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)}>
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="font-semibold">{template.name}</h3>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsEditing(true)}
+                className="text-[var(--text-muted)] hover:text-white"
+              >
+                <Edit3 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handleDeleteTemplate(template.id)}
+                className="text-[var(--accent-danger)]"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+        <p className="text-sm text-[var(--text-muted)]">
+          {template.exercises.length} exercises
+        </p>
+        <Button size="sm" variant="outline" onClick={() => startTemplateWorkout(template.id)}>
+          <Play className="w-3 h-3 mr-2" />
+          Start Template
+        </Button>
+      </div>
+    );
+  };
+
   // No program selected - show simple start options
   if (!hasProgram || !hasRepMaxes) {
     return (
@@ -55,6 +178,18 @@ export function WorkoutPageClient({
           </p>
         </div>
         <CustomStartButton />
+        {templateList.length > 0 && (
+          <div className="mt-8">
+            <h2 className="font-[family-name:var(--font-bebas-neue)] text-2xl tracking-wide mb-4">
+              TEMPLATES
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              {templateList.map((template) => (
+                <TemplateCard key={template.id} template={template} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -99,6 +234,19 @@ export function WorkoutPageClient({
       <div className="mb-8">
         <CustomStartButton variant="inline" />
       </div>
+
+      {templateList.length > 0 && (
+        <section className="mb-10">
+          <h2 className="font-[family-name:var(--font-bebas-neue)] text-2xl tracking-wide mb-4">
+            TEMPLATES
+          </h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            {templateList.map((template) => (
+              <TemplateCard key={template.id} template={template} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Workout Days */}
       <div className="space-y-8">

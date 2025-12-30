@@ -4,6 +4,7 @@ import { UserProfile } from "@clerk/nextjs";
 import { prisma } from "@/lib/db";
 import { BodyWeightQuickEntry } from "@/components/body-weight/quick-entry";
 import { BodyWeightHistory } from "@/components/body-weight/history";
+import { RestTimerSettings } from "@/components/settings/rest-timer-settings";
 
 async function getBodyWeightData(userId: string) {
   const [entries, settings] = await Promise.all([
@@ -60,6 +61,14 @@ export default async function SettingsPage() {
             }))}
           />
         </div>
+      </section>
+
+      {/* Rest Timer Section */}
+      <section className="mb-8">
+        <h2 className="font-[family-name:var(--font-bebas-neue)] text-2xl tracking-wide mb-4">
+          REST TIMER
+        </h2>
+        <RestTimerSettings defaultSeconds={settings?.restTimerDefault || 180} />
       </section>
 
       <UserProfile

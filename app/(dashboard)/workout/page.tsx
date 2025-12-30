@@ -13,6 +13,18 @@ async function getUserData(userId: string) {
   });
 }
 
+async function getTemplates(userId: string) {
+  return await prisma.workoutTemplate.findMany({
+    where: { userId },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      exercises: true,
+    },
+  });
+}
+
 export default async function WorkoutPage() {
   const { userId } = await auth();
 
@@ -20,7 +32,14 @@ export default async function WorkoutPage() {
     redirect("/sign-in");
   }
 
-  const user = await getUserData(userId);
+  const [user, templates] = await Promise.all([
+    getUserData(userId),
+    getTemplates(userId),
+  ]);
+  const normalizedTemplates = templates.map((template) => ({
+    ...template,
+    exercises: Array.isArray(template.exercises) ? template.exercises : [],
+  }));
 
   const hasProgram = !!user?.selectedProgram;
   const hasRepMaxes = (user?.repMaxes?.length || 0) >= 4;
@@ -30,6 +49,7 @@ export default async function WorkoutPage() {
       <WorkoutPageClient
         hasProgram={hasProgram}
         hasRepMaxes={hasRepMaxes}
+        templates={normalizedTemplates}
       />
     );
   }
@@ -64,6 +84,7 @@ export default async function WorkoutPage() {
       currentWeek={user.currentWeek}
       trainingMaxes={trainingMaxes}
       workouts={workouts}
+      templates={normalizedTemplates}
     />
   );
 }

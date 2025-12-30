@@ -23,6 +23,13 @@ export async function GET(
         sets: {
           orderBy: { completedAt: "asc" },
         },
+        template: {
+          select: {
+            id: true,
+            name: true,
+            exercises: true,
+          },
+        },
       },
     });
 

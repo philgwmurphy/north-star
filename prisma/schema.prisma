@@ -21,6 +21,7 @@ model User {
   repMaxes        RepMax[]
   workouts        Workout[]
   bodyWeights     BodyWeight[]
+  workoutTemplates WorkoutTemplate[]
   selectedProgram String?
   currentWeek     Int       @default(1)
   settings        UserSettings?
@@ -47,15 +48,31 @@ model Workout {
   userId      String
   programKey  String?
   programDay  String?
+  templateId  String?
   startedAt   DateTime  @default(now())
   completedAt DateTime?
   notes       String?
 
   sets WorkoutSet[]
+  template WorkoutTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
   user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([startedAt])
+}
+
+model WorkoutTemplate {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  exercises Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workouts Workout[]
+  user     User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model WorkoutSet {
