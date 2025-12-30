@@ -5,7 +5,7 @@ import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { programs, type RepMaxes, type WorkoutSet as ProgramSet } from "@/lib/programs";
 import { formatDuration, formatDurationSeconds } from "@/lib/utils";
-import { Check, Clock, Plus, Trash2, Pencil, X } from "lucide-react";
+import { Check, Clock, Plus, Trash2, Pencil, X, Pause, Play, RotateCcw } from "lucide-react";
 import { ExerciseAutocomplete } from "@/components/ui/exercise-autocomplete";
 import { searchCardioExercises } from "@/lib/exercises";
 
@@ -33,6 +33,9 @@ interface Workout {
 interface UserData {
   currentWeek: number;
   repMaxes: { exercise: string; oneRM: number }[];
+  settings?: {
+    restTimerDefault?: number;
+  };
 }
 
 interface InlineFormState {
@@ -96,6 +99,9 @@ export default function ActiveWorkoutPage() {
         if (userRes.ok) {
           const user = await userRes.json();
           setUserData(user);
+          const defaultRest = user.settings?.restTimerDefault ?? 180;
+          setRestDuration(defaultRest);
+          setRemainingSeconds(defaultRest);
         }
       } catch (error) {
         console.error("Failed to fetch data:", error);
@@ -130,6 +136,21 @@ export default function ActiveWorkoutPage() {
       loadTemplate(templateWorkoutId);
     }
   }, [templateWorkoutId]);
+
+  useEffect(() => {
+    if (!isTimerRunning || !timerEnd) return;
+
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, Math.round((timerEnd - Date.now()) / 1000));
+      setRemainingSeconds(remaining);
+      if (remaining <= 0) {
+        setIsTimerRunning(false);
+        setTimerEnd(null);
+      }
+    }, 250);
+
+    return () => clearInterval(interval);
+  }, [isTimerRunning, timerEnd]);
 
   // Update elapsed time
   useEffect(() => {
@@ -483,6 +504,68 @@ export default function ActiveWorkoutPage() {
     0
   );
 
+  const formatRestTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const startRestTimer = () => {
+    const endTime = Date.now() + baseRestDuration * 1000;
+    setRemainingSeconds(baseRestDuration);
+    setTimerEnd(endTime);
+    setIsTimerRunning(true);
+  };
+
+  const pauseRestTimer = () => {
+    if (!isTimerRunning || !timerEnd) return;
+    const remaining = Math.max(0, Math.round((timerEnd - Date.now()) / 1000));
+    setRemainingSeconds(remaining);
+    setIsTimerRunning(false);
+    setTimerEnd(null);
+  };
+
+  const resumeRestTimer = () => {
+    if (remainingSeconds <= 0) return;
+    const endTime = Date.now() + remainingSeconds * 1000;
+    setTimerEnd(endTime);
+    setIsTimerRunning(true);
+  };
+
+  const resetRestTimer = () => {
+    setIsTimerRunning(false);
+    setTimerEnd(null);
+    setRemainingSeconds(baseRestDuration);
+  };
+
+  const adjustRestDuration = (value: string) => {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return;
+    const clamped = Math.max(10, parsed);
+    setRestDuration(clamped);
+    if (!isTimerRunning) {
+      setRemainingSeconds(clamped);
+    }
+  };
+
+  const bumpTimer = (delta: number) => {
+    setRemainingSeconds((prev) => {
+      const next = Math.max(0, prev + delta);
+      if (isTimerRunning) {
+        setTimerEnd(Date.now() + next * 1000);
+      }
+      return next;
+    });
+  };
+
+  const timerLabel = isTimerRunning
+    ? "Resting..."
+    : remainingSeconds === baseRestDuration
+      ? "Ready to rest"
+      : remainingSeconds === 0
+        ? "Rest finished"
+        : "Paused";
+
   // Render a set row with edit capability
   const renderSetRow = (set: WorkoutSet, idx: number) => (
     <div key={set.id} className="px-4 py-3 bg-[var(--bg-elevated)]">
@@ -728,6 +811,62 @@ export default function ActiveWorkoutPage() {
           <Check className="w-4 h-4 mr-2" />
           Finish Workout
         </Button>
+      </div>
+
+      {/* Rest Timer */}
+      <div className="mb-8 border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+        <div className="px-4 py-3 border-b border-[var(--border-subtle)] flex items-center justify-between">
+          <div>
+            <p className="text-[var(--text-muted)] text-sm uppercase tracking-wider">Rest Timer</p>
+            <div className="flex items-baseline gap-3">
+              <span className="font-[family-name:var(--font-bebas-neue)] text-3xl tracking-wide">
+                {formatRestTime(remainingSeconds)}
+              </span>
+              <span className="text-[var(--text-muted)] text-xs">{timerLabel}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {isTimerRunning ? (
+              <Button size="sm" variant="outline" onClick={pauseRestTimer}>
+                <Pause className="w-4 h-4 mr-1" />
+                Pause
+              </Button>
+            ) : (
+              <Button size="sm" onClick={remainingSeconds === baseRestDuration ? startRestTimer : resumeRestTimer}>
+                <Play className="w-4 h-4 mr-1" />
+                {remainingSeconds === baseRestDuration ? "Start" : "Resume"}
+              </Button>
+            )}
+            <Button size="sm" variant="ghost" onClick={resetRestTimer}>
+              <RotateCcw className="w-4 h-4 mr-1" />
+              Reset
+            </Button>
+          </div>
+        </div>
+        <div className="px-4 py-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-[var(--text-muted)]">Rest length (sec)</label>
+            <input
+              type="number"
+              min={10}
+              value={restDuration}
+              onChange={(e) => adjustRestDuration(e.target.value)}
+              className="w-24 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[var(--text-muted)]">Adjust</span>
+            <Button size="sm" variant="outline" onClick={() => bumpTimer(15)}>
+              +15s
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => bumpTimer(30)}>
+              +30s
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => bumpTimer(-10)} disabled={remainingSeconds <= 0}>
+              -10s
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Exercises */}
