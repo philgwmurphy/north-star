@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { WeekSelector } from "@/components/workout/week-selector";
-import { Play, Edit3, Save, Trash2 } from "lucide-react";
+import { Play, Edit3, Save, Trash2, Plus } from "lucide-react";
 import { CustomStartButton } from "./custom-start-button";
 
 interface WorkoutDay {
