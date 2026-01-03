@@ -20,7 +20,7 @@ interface TemplateExerciseItem {
 interface WorkoutTemplateInput {
   id: string;
   name: string;
-  exercises: unknown[];
+  exercises: unknown[] | null;
 }
 
 interface CustomProgramInput {
@@ -43,7 +43,7 @@ type RuleInput = {
   increment: string;
 };
 
-const normalizeTemplateExercises = (exercises: unknown[]): TemplateExerciseItem[] => {
+const normalizeTemplateExercises = (exercises: unknown[] | null): TemplateExerciseItem[] => {
   if (!Array.isArray(exercises)) return [];
   return exercises.flatMap((exercise) => {
     if (typeof exercise === "string") {

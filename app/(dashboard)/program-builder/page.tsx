@@ -45,8 +45,17 @@ export default async function ProgramBuilderPage() {
 
   return (
     <ProgramBuilderClient
-      templates={templates}
-      programs={programs}
+      templates={templates.map((template) => ({
+        ...template,
+        exercises: Array.isArray(template.exercises) ? template.exercises : [],
+      }))}
+      programs={programs.map((program) => ({
+        ...program,
+        template: {
+          ...program.template,
+          exercises: Array.isArray(program.template.exercises) ? program.template.exercises : [],
+        },
+      }))}
     />
   );
 }
