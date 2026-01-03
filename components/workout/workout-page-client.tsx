@@ -393,14 +393,23 @@ export function WorkoutPageClient({
             Build custom workouts and start them when you are ready.
           </p>
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setShowCreateTemplate((prev) => !prev)}
-        >
-          <Plus className="w-3 h-3 mr-2" />
-          {showCreateTemplate ? "Close" : "New Template"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowCreateTemplate((prev) => !prev)}
+          >
+            <Plus className="w-3 h-3 mr-2" />
+            {showCreateTemplate ? "Close" : "New Template"}
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => router.push("/program-builder")}
+          >
+            Program Builder
+          </Button>
+        </div>
       </div>
 
       {showCreateTemplate && (
