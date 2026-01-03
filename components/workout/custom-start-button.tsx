@@ -106,7 +106,13 @@ export function CustomStartButton({ variant = "card" }: CustomStartButtonProps) 
             Name it, optionally copy a past workout
           </p>
         </div>
-        <div className="w-10 h-10 bg-[var(--bg-elevated)] flex items-center justify-center">
+        <button
+          type="button"
+          onClick={handleStart}
+          disabled={isStarting}
+          aria-label="Start custom workout"
+          className="w-10 h-10 bg-[var(--bg-elevated)] flex items-center justify-center disabled:opacity-50"
+        >
           {isStarting ? (
             <div className="w-5 h-5 border-2 border-white border-t-transparent animate-spin" />
           ) : variant === "card" ? (
@@ -114,7 +120,7 @@ export function CustomStartButton({ variant = "card" }: CustomStartButtonProps) 
           ) : (
             <Dumbbell className="w-5 h-5" />
           )}
-        </div>
+        </button>
       </div>
 
       <div className="space-y-3">
