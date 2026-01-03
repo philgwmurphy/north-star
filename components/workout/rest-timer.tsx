@@ -16,18 +16,26 @@ function formatSeconds(totalSeconds: number) {
 }
 
 export function RestTimer({ defaultSeconds, triggerKey }: RestTimerProps) {
+  const minSeconds = 15;
+  const maxSeconds = 900;
+  const adjustStep = 15;
+  const clampBaseSeconds = (value: number) => Math.min(maxSeconds, Math.max(minSeconds, value));
+  const clampLeftSeconds = (value: number) => Math.min(maxSeconds, Math.max(0, value));
+
   const [secondsLeft, setSecondsLeft] = useState(defaultSeconds);
   const [isRunning, setIsRunning] = useState(false);
+  const [restSeconds, setRestSeconds] = useState(defaultSeconds);
 
   useEffect(() => {
     setSecondsLeft(defaultSeconds);
+    setRestSeconds(defaultSeconds);
   }, [defaultSeconds]);
 
   useEffect(() => {
     if (triggerKey === 0) return;
-    setSecondsLeft(defaultSeconds);
+    setSecondsLeft(restSeconds);
     setIsRunning(true);
-  }, [triggerKey, defaultSeconds]);
+  }, [triggerKey, restSeconds]);
 
   useEffect(() => {
     if (!isRunning) return;
@@ -45,7 +53,7 @@ export function RestTimer({ defaultSeconds, triggerKey }: RestTimerProps) {
 
   const handleToggle = () => {
     if (secondsLeft <= 0) {
-      setSecondsLeft(defaultSeconds);
+      setSecondsLeft(restSeconds);
       setIsRunning(true);
       return;
     }
@@ -54,8 +62,20 @@ export function RestTimer({ defaultSeconds, triggerKey }: RestTimerProps) {
   };
 
   const handleReset = () => {
-    setSecondsLeft(defaultSeconds);
+    setSecondsLeft(restSeconds);
     setIsRunning(false);
+  };
+
+  const handleAdjust = (delta: number) => {
+    setRestSeconds((prev) => {
+      const next = clampBaseSeconds(prev + delta);
+      if (isRunning) {
+        setSecondsLeft((current) => clampLeftSeconds(current + delta));
+      } else {
+        setSecondsLeft(next);
+      }
+      return next;
+    });
   };
 
   return (
@@ -66,6 +86,20 @@ export function RestTimer({ defaultSeconds, triggerKey }: RestTimerProps) {
       </div>
       <div className="font-[family-name:var(--font-geist-mono)] text-lg">
         {formatSeconds(secondsLeft)}
+      </div>
+      <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
+        <span>Interval</span>
+        <span className="font-[family-name:var(--font-geist-mono)] text-white">
+          {formatSeconds(restSeconds)}
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button size="sm" variant="ghost" onClick={() => handleAdjust(-adjustStep)}>
+          -15s
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => handleAdjust(adjustStep)}>
+          +15s
+        </Button>
       </div>
       <Button size="sm" variant="outline" onClick={handleToggle}>
         {isRunning ? "Pause" : secondsLeft <= 0 ? "Restart" : "Start"}
