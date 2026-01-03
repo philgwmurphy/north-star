@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -28,14 +28,56 @@ interface WorkoutPageClientProps {
   currentWeek?: number;
   trainingMaxes?: { squat: number; bench: number; deadlift: number; ohp: number } | null;
   workouts?: WorkoutDay[];
-  templates?: WorkoutTemplate[];
+  templates?: WorkoutTemplateInput[];
+}
+
+interface TemplateExerciseSet {
+  weight: number;
+  reps: number;
+  durationSeconds?: number | null;
+}
+
+interface TemplateExerciseItem {
+  name: string;
+  sets: TemplateExerciseSet[];
+}
+
+interface WorkoutTemplateInput {
+  id: string;
+  name: string;
+  exercises: unknown[];
 }
 
 interface WorkoutTemplate {
   id: string;
   name: string;
-  exercises: unknown[];
+  exercises: TemplateExerciseItem[];
 }
+
+const normalizeTemplateExercises = (exercises: unknown[]): TemplateExerciseItem[] => {
+  if (!Array.isArray(exercises)) return [];
+  return exercises.flatMap((exercise) => {
+    if (typeof exercise === "string") {
+      const trimmed = exercise.trim();
+      return trimmed ? [{ name: trimmed, sets: [] }] : [];
+    }
+    if (exercise && typeof exercise === "object" && "name" in exercise) {
+      const name = String((exercise as { name?: string }).name || "").trim();
+      if (!name) return [];
+      const sets = Array.isArray((exercise as { sets?: TemplateExerciseSet[] }).sets)
+        ? (exercise as { sets?: TemplateExerciseSet[] }).sets || []
+        : [];
+      return [{ name, sets }];
+    }
+    return [];
+  });
+};
+
+const normalizeTemplate = (template: WorkoutTemplateInput | WorkoutTemplate): WorkoutTemplate => ({
+  id: template.id,
+  name: template.name,
+  exercises: normalizeTemplateExercises((template as WorkoutTemplateInput).exercises ?? (template as WorkoutTemplate).exercises),
+});
 
 export function WorkoutPageClient({
   hasProgram,
@@ -50,7 +92,17 @@ export function WorkoutPageClient({
   templates = [],
 }: WorkoutPageClientProps) {
   const router = useRouter();
-  const [templateList, setTemplateList] = useState(templates);
+  const [templateList, setTemplateList] = useState<WorkoutTemplate[]>(
+    () => templates.map((template) => normalizeTemplate(template))
+  );
+  const [savingTemplateId, setSavingTemplateId] = useState<string | null>(null);
+  const [showCreateTemplate, setShowCreateTemplate] = useState(false);
+  const [creatingTemplate, setCreatingTemplate] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [newTemplateName, setNewTemplateName] = useState("");
+  const [newTemplateExercises, setNewTemplateExercises] = useState<TemplateExerciseItem[]>([
+    { name: "", sets: [] },
+  ]);
 
   const startTemplateWorkout = async (templateId: string) => {
     try {
@@ -78,11 +130,37 @@ export function WorkoutPageClient({
       });
 
       if (response.ok) {
-        const updated = await response.json();
+        const updated = normalizeTemplate(await response.json());
         setTemplateList((prev) => prev.map((tpl) => (tpl.id === templateId ? updated : tpl)));
       }
     } catch (error) {
       console.error("Failed to rename template:", error);
+    }
+  };
+
+  const handleUpdateTemplateExercises = async (
+    templateId: string,
+    exercises: TemplateExerciseItem[]
+  ) => {
+    setSavingTemplateId(templateId);
+    try {
+      const response = await fetch(`/api/templates/${templateId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ exercises }),
+      });
+
+      if (response.ok) {
+        const updated = normalizeTemplate(await response.json());
+        setTemplateList((prev) => prev.map((tpl) => (tpl.id === templateId ? updated : tpl)));
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Failed to update template exercises:", error);
+      return false;
+    } finally {
+      setSavingTemplateId(null);
     }
   };
 
@@ -102,9 +180,66 @@ export function WorkoutPageClient({
     }
   };
 
+  const resetNewTemplate = () => {
+    setNewTemplateName("");
+    setNewTemplateExercises([{ name: "", sets: [] }]);
+    setCreateError(null);
+    setShowCreateTemplate(false);
+  };
+
+  const handleCreateTemplate = async () => {
+    const name = newTemplateName.trim();
+    if (!name) {
+      setCreateError("Template name is required.");
+      return;
+    }
+
+    const exercises = newTemplateExercises
+      .map((exercise) => ({ ...exercise, name: exercise.name.trim() }))
+      .filter((exercise) => exercise.name.length > 0);
+
+    setCreatingTemplate(true);
+    setCreateError(null);
+    try {
+      const response = await fetch("/api/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, exercises }),
+      });
+
+      if (response.ok) {
+        const created = normalizeTemplate(await response.json());
+        setTemplateList((prev) => [created, ...prev]);
+        resetNewTemplate();
+        return;
+      }
+
+      setCreateError("Failed to create template.");
+    } catch (error) {
+      console.error("Failed to create template:", error);
+      setCreateError("Failed to create template.");
+    } finally {
+      setCreatingTemplate(false);
+    }
+  };
+
   const TemplateCard = ({ template }: { template: WorkoutTemplate }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [name, setName] = useState(template.name);
+    const [isEditingExercises, setIsEditingExercises] = useState(false);
+    const [exerciseItems, setExerciseItems] = useState<TemplateExerciseItem[]>(template.exercises);
+
+    useEffect(() => {
+      if (!isEditing) {
+        setName(template.name);
+      }
+    }, [template.name, isEditing]);
+
+    useEffect(() => {
+      if (!isEditingExercises) {
+        setExerciseItems(template.exercises);
+      }
+    }, [template.exercises, isEditingExercises]);
 
     return (
       <div className="border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 space-y-3">
@@ -137,30 +272,218 @@ export function WorkoutPageClient({
             <h3 className="font-semibold">{template.name}</h3>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setIsEditing(true)}
-                className="text-[var(--text-muted)] hover:text-white"
+                onClick={() => {
+                  setIsEditing(true);
+                  setIsEditingExercises(false);
+                }}
+                className="text-[var(--text-muted)] hover:text-white disabled:opacity-40"
+                disabled={isEditingExercises}
               >
                 <Edit3 className="w-4 h-4" />
               </button>
               <button
                 onClick={() => handleDeleteTemplate(template.id)}
-                className="text-[var(--accent-danger)]"
+                className="text-[var(--accent-danger)] disabled:opacity-40"
+                disabled={isEditingExercises}
               >
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
           </div>
         )}
-        <p className="text-sm text-[var(--text-muted)]">
-          {template.exercises.length} exercises
-        </p>
-        <Button size="sm" variant="outline" onClick={() => startTemplateWorkout(template.id)}>
-          <Play className="w-3 h-3 mr-2" />
-          Start Template
-        </Button>
+        <p className="text-sm text-[var(--text-muted)]">{template.exercises.length} exercises</p>
+        {isEditingExercises ? (
+          <div className="space-y-3">
+            <div className="space-y-2">
+              {exerciseItems.map((exercise, idx) => (
+                <div key={`${template.id}-exercise-${idx}`} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={exercise.name}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setExerciseItems((prev) =>
+                        prev.map((item, index) =>
+                          index === idx ? { ...item, name: value } : item
+                        )
+                      );
+                    }}
+                    className="flex-1 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] focus:border-white focus:outline-none"
+                    placeholder={`Exercise ${idx + 1}`}
+                  />
+                  <button
+                    onClick={() =>
+                      setExerciseItems((prev) => prev.filter((_, index) => index !== idx))
+                    }
+                    className="text-[var(--accent-danger)]"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setExerciseItems((prev) => [...prev, { name: "", sets: [] }])}
+            >
+              <Plus className="w-3 h-3 mr-2" />
+              Add Exercise
+            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                onClick={async () => {
+                  const trimmed = exerciseItems
+                    .map((exercise) => ({ ...exercise, name: exercise.name.trim() }))
+                    .filter((exercise) => exercise.name.length > 0);
+                  const saved = await handleUpdateTemplateExercises(template.id, trimmed);
+                  if (saved) {
+                    setIsEditingExercises(false);
+                  }
+                }}
+                loading={savingTemplateId === template.id}
+              >
+                <Save className="w-4 h-4 mr-1" />
+                Save Exercises
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setExerciseItems(template.exercises);
+                  setIsEditingExercises(false);
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => startTemplateWorkout(template.id)}>
+              <Play className="w-3 h-3 mr-2" />
+              Start Template
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setIsEditingExercises(true);
+                setIsEditing(false);
+              }}
+            >
+              <Edit3 className="w-3 h-3 mr-2" />
+              Edit Exercises
+            </Button>
+          </div>
+        )}
       </div>
     );
   };
+
+  const renderTemplateSection = () => (
+    <section className="mt-8">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="font-[family-name:var(--font-bebas-neue)] text-2xl tracking-wide">
+            TEMPLATES
+          </h2>
+          <p className="text-sm text-[var(--text-muted)]">
+            Build custom workouts and start them when you are ready.
+          </p>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setShowCreateTemplate((prev) => !prev)}
+        >
+          <Plus className="w-3 h-3 mr-2" />
+          {showCreateTemplate ? "Close" : "New Template"}
+        </Button>
+      </div>
+
+      {showCreateTemplate && (
+        <div className="border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 space-y-3 mb-6">
+          <div className="space-y-2">
+            <label className="text-xs uppercase tracking-wider text-[var(--text-muted)]">
+              Template Name
+            </label>
+            <input
+              type="text"
+              value={newTemplateName}
+              onChange={(e) => setNewTemplateName(e.target.value)}
+              className="w-full px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] focus:border-white focus:outline-none"
+              placeholder="e.g. Upper Body Pump"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs uppercase tracking-wider text-[var(--text-muted)]">
+              Exercises
+            </label>
+            {newTemplateExercises.map((exercise, idx) => (
+              <div key={`new-exercise-${idx}`} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={exercise.name}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setNewTemplateExercises((prev) =>
+                      prev.map((item, index) =>
+                        index === idx ? { ...item, name: value } : item
+                      )
+                    );
+                  }}
+                  className="flex-1 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] focus:border-white focus:outline-none"
+                  placeholder={`Exercise ${idx + 1}`}
+                />
+                <button
+                  onClick={() =>
+                    setNewTemplateExercises((prev) => prev.filter((_, index) => index !== idx))
+                  }
+                  className="text-[var(--accent-danger)]"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setNewTemplateExercises((prev) => [...prev, { name: "", sets: [] }])}
+            >
+              <Plus className="w-3 h-3 mr-2" />
+              Add Exercise
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={handleCreateTemplate} loading={creatingTemplate}>
+              <Save className="w-4 h-4 mr-1" />
+              Save Template
+            </Button>
+            <Button size="sm" variant="ghost" onClick={resetNewTemplate}>
+              Cancel
+            </Button>
+          </div>
+          {createError && <p className="text-sm text-[var(--accent-danger)]">{createError}</p>}
+        </div>
+      )}
+
+      {templateList.length > 0 ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          {templateList.map((template) => (
+            <TemplateCard key={template.id} template={template} />
+          ))}
+        </div>
+      ) : (
+        !showCreateTemplate && (
+          <p className="text-sm text-[var(--text-muted)]">
+            No templates yet. Create one to start faster later.
+          </p>
+        )
+      )}
+    </section>
+  );
 
   // No program selected - show simple start options
   if (!hasProgram || !hasRepMaxes) {
@@ -178,18 +501,7 @@ export function WorkoutPageClient({
           </p>
         </div>
         <CustomStartButton />
-        {templateList.length > 0 && (
-          <div className="mt-8">
-            <h2 className="font-[family-name:var(--font-bebas-neue)] text-2xl tracking-wide mb-4">
-              TEMPLATES
-            </h2>
-            <div className="grid gap-4 md:grid-cols-2">
-              {templateList.map((template) => (
-                <TemplateCard key={template.id} template={template} />
-              ))}
-            </div>
-          </div>
-        )}
+        {renderTemplateSection()}
       </div>
     );
   }
@@ -235,18 +547,7 @@ export function WorkoutPageClient({
         <CustomStartButton variant="inline" />
       </div>
 
-      {templateList.length > 0 && (
-        <section className="mb-10">
-          <h2 className="font-[family-name:var(--font-bebas-neue)] text-2xl tracking-wide mb-4">
-            TEMPLATES
-          </h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            {templateList.map((template) => (
-              <TemplateCard key={template.id} template={template} />
-            ))}
-          </div>
-        </section>
-      )}
+      {renderTemplateSection()}
 
       {/* Workout Days */}
       <div className="space-y-8">
