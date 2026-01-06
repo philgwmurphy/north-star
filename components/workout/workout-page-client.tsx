@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { WeekSelector } from "@/components/workout/week-selector";
 import { Play, Edit3, Save, Trash2, Plus } from "lucide-react";
 import { CustomStartButton } from "./custom-start-button";
+import { ExerciseAutocomplete } from "@/components/ui/exercise-autocomplete";
 
 interface WorkoutDay {
   day: string;
@@ -297,18 +298,15 @@ export function WorkoutPageClient({
             <div className="space-y-2">
               {exerciseItems.map((exercise, idx) => (
                 <div key={`${template.id}-exercise-${idx}`} className="flex items-center gap-2">
-                  <input
-                    type="text"
+                  <ExerciseAutocomplete
                     value={exercise.name}
-                    onChange={(e) => {
-                      const value = e.target.value;
+                    onChange={(name) =>
                       setExerciseItems((prev) =>
                         prev.map((item, index) =>
-                          index === idx ? { ...item, name: value } : item
+                          index === idx ? { ...item, name } : item
                         )
-                      );
-                    }}
-                    className="flex-1 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] focus:border-white focus:outline-none"
+                      )
+                    }
                     placeholder={`Exercise ${idx + 1}`}
                   />
                   <button
@@ -432,18 +430,15 @@ export function WorkoutPageClient({
             </label>
             {newTemplateExercises.map((exercise, idx) => (
               <div key={`new-exercise-${idx}`} className="flex items-center gap-2">
-                <input
-                  type="text"
+                <ExerciseAutocomplete
                   value={exercise.name}
-                  onChange={(e) => {
-                    const value = e.target.value;
+                  onChange={(name) =>
                     setNewTemplateExercises((prev) =>
                       prev.map((item, index) =>
-                        index === idx ? { ...item, name: value } : item
+                        index === idx ? { ...item, name } : item
                       )
-                    );
-                  }}
-                  className="flex-1 px-3 py-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] focus:border-white focus:outline-none"
+                    )
+                  }
                   placeholder={`Exercise ${idx + 1}`}
                 />
                 <button
