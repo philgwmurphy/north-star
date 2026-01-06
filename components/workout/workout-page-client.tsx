@@ -313,7 +313,7 @@ export function WorkoutPageClient({
                     onClick={() =>
                       setExerciseItems((prev) => prev.filter((_, index) => index !== idx))
                     }
-                    className="text-[var(--accent-danger)]"
+                    className="shrink-0 p-2 text-[var(--accent-danger)]"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -445,7 +445,7 @@ export function WorkoutPageClient({
                   onClick={() =>
                     setNewTemplateExercises((prev) => prev.filter((_, index) => index !== idx))
                   }
-                  className="text-[var(--accent-danger)]"
+                  className="shrink-0 p-2 text-[var(--accent-danger)]"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
