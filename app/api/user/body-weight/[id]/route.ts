@@ -14,10 +14,20 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    await prisma.bodyWeight.delete({
+    const existingEntry = await prisma.bodyWeight.findFirst({
       where: {
         id,
         userId,
+      },
+    });
+
+    if (!existingEntry) {
+      return NextResponse.json({ error: "Entry not found" }, { status: 404 });
+    }
+
+    await prisma.bodyWeight.delete({
+      where: {
+        id,
       },
     });
 

@@ -95,10 +95,20 @@ export async function PATCH(
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
     }
 
-    const workout = await prisma.workout.update({
+    const existingWorkout = await prisma.workout.findFirst({
       where: {
         id,
         userId,
+      },
+    });
+
+    if (!existingWorkout) {
+      return NextResponse.json({ error: "Workout not found" }, { status: 404 });
+    }
+
+    const workout = await prisma.workout.update({
+      where: {
+        id,
       },
       data,
       include: {
@@ -127,10 +137,20 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    await prisma.workout.delete({
+    const existingWorkout = await prisma.workout.findFirst({
       where: {
         id,
         userId,
+      },
+    });
+
+    if (!existingWorkout) {
+      return NextResponse.json({ error: "Workout not found" }, { status: 404 });
+    }
+
+    await prisma.workout.delete({
+      where: {
+        id,
       },
     });
 

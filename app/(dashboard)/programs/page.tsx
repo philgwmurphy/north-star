@@ -131,22 +131,29 @@ export default function ProgramsPage() {
     setSaving(true);
     try {
       // Save rep maxes
-      await fetch("/api/user/rep-maxes", {
+      const repMaxResponse = await fetch("/api/user/rep-maxes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(repMaxData),
       });
+      if (!repMaxResponse.ok) {
+        throw new Error("Failed to save rep maxes");
+      }
 
       // Save selected program (or clear selection)
-      await fetch("/api/user/program", {
+      const programResponse = await fetch("/api/user/program", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ programKey: selectedProgram }),
       });
+      if (!programResponse.ok) {
+        throw new Error("Failed to save program");
+      }
 
       router.push("/");
     } catch (error) {
       console.error("Failed to save:", error);
+      alert("Failed to save program setup. Please try again.");
     } finally {
       setSaving(false);
     }

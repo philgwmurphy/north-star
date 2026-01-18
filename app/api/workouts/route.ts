@@ -63,7 +63,7 @@ export async function POST(request: Request) {
 
     if (existingWorkout) {
       if (wantsJson) {
-        return NextResponse.json(existingWorkout);
+        return NextResponse.json({ ...existingWorkout, resumed: true });
       }
       return NextResponse.redirect(new URL(`/workout/${existingWorkout.id}`, request.url));
     }

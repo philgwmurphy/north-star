@@ -14,8 +14,16 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const program = await prisma.customProgram.update({
+    const existingProgram = await prisma.customProgram.findFirst({
       where: { id, userId },
+    });
+
+    if (!existingProgram) {
+      return NextResponse.json({ error: "Program not found" }, { status: 404 });
+    }
+
+    const program = await prisma.customProgram.update({
+      where: { id },
       data: { currentWeek: 1 },
       include: {
         template: {

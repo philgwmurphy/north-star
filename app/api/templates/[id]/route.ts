@@ -30,8 +30,16 @@ export async function PATCH(
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
     }
 
-    const template = await prisma.workoutTemplate.update({
+    const existingTemplate = await prisma.workoutTemplate.findFirst({
       where: { id, userId },
+    });
+
+    if (!existingTemplate) {
+      return NextResponse.json({ error: "Template not found" }, { status: 404 });
+    }
+
+    const template = await prisma.workoutTemplate.update({
+      where: { id },
       data,
     });
 
@@ -54,8 +62,16 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    await prisma.workoutTemplate.delete({
+    const existingTemplate = await prisma.workoutTemplate.findFirst({
       where: { id, userId },
+    });
+
+    if (!existingTemplate) {
+      return NextResponse.json({ error: "Template not found" }, { status: 404 });
+    }
+
+    await prisma.workoutTemplate.delete({
+      where: { id },
     });
 
     return NextResponse.json({ success: true });

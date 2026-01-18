@@ -75,7 +75,7 @@ export function CustomStartButton({ variant = "card" }: CustomStartButtonProps) 
 
       if (response.ok) {
         const workout = await response.json();
-        const search = selectedTemplate ? `?template=${selectedTemplate}` : "";
+        const search = selectedTemplate && !workout?.resumed ? `?template=${selectedTemplate}` : "";
         router.push(`/workout/${workout.id}${search}`);
         return;
       }
