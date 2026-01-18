@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,10 @@ export function WorkoutDetailEditor({ initialWorkout }: WorkoutDetailEditorProps
     minutes: "",
   });
   const [savingSet, setSavingSet] = useState<string | null>(null);
+  const [isEditingDuration, setIsEditingDuration] = useState(false);
+  const [durationHours, setDurationHours] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState("");
+  const [savingDuration, setSavingDuration] = useState(false);
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newExercise, setNewExercise] = useState({ name: "", weight: "", reps: "" });
@@ -83,6 +87,22 @@ export function WorkoutDetailEditor({ initialWorkout }: WorkoutDetailEditorProps
     day: "numeric",
   });
 
+  useEffect(() => {
+    if (isEditingDuration) return;
+    if (!workout.completedAt) {
+      setDurationHours("");
+      setDurationMinutes("");
+      return;
+    }
+    const start = new Date(workout.startedAt);
+    const end = new Date(workout.completedAt);
+    const diffMins = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+    const hours = Math.floor(diffMins / 60);
+    const minutes = diffMins % 60;
+    setDurationHours(hours > 0 ? String(hours) : "");
+    setDurationMinutes(minutes > 0 ? String(minutes) : "");
+  }, [workout.startedAt, workout.completedAt, isEditingDuration]);
+
   let duration = "";
   if (workout.completedAt) {
     const start = new Date(workout.startedAt);
@@ -97,6 +117,52 @@ export function WorkoutDetailEditor({ initialWorkout }: WorkoutDetailEditorProps
       duration = mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
     }
   }
+
+  const cancelDurationEdit = () => {
+    setIsEditingDuration(false);
+    if (!workout.completedAt) {
+      setDurationHours("");
+      setDurationMinutes("");
+      return;
+    }
+    const start = new Date(workout.startedAt);
+    const end = new Date(workout.completedAt);
+    const diffMins = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+    const hours = Math.floor(diffMins / 60);
+    const minutes = diffMins % 60;
+    setDurationHours(hours > 0 ? String(hours) : "");
+    setDurationMinutes(minutes > 0 ? String(minutes) : "");
+  };
+
+  const handleSaveDuration = async () => {
+    if (!workout.completedAt) return;
+    const hours = Number(durationHours || 0);
+    const minutes = Number(durationMinutes || 0);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return;
+    const totalMinutes = Math.round(hours * 60 + minutes);
+    if (totalMinutes <= 0) return;
+
+    setSavingDuration(true);
+    try {
+      const start = new Date(workout.startedAt);
+      const updatedCompletedAt = new Date(start.getTime() + totalMinutes * 60000);
+      const response = await fetch(`/api/workouts/${workout.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ completedAt: updatedCompletedAt.toISOString() }),
+      });
+
+      if (response.ok) {
+        const updatedWorkout = await response.json();
+        setWorkout(updatedWorkout);
+        setIsEditingDuration(false);
+      }
+    } catch (error) {
+      console.error("Failed to update duration:", error);
+    } finally {
+      setSavingDuration(false);
+    }
+  };
 
   const startEditingSet = (set: WorkoutSet) => {
     setEditingSetId(set.id);
@@ -564,7 +630,52 @@ export function WorkoutDetailEditor({ initialWorkout }: WorkoutDetailEditorProps
           {duration && (
             <div className="flex items-center gap-2 text-[var(--text-muted)]">
               <Clock className="w-4 h-4" />
-              <span>{duration}</span>
+              {isEditingDuration ? (
+                <>
+                  <input
+                    type="number"
+                    placeholder="h"
+                    className="w-16 px-2 py-1 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                    value={durationHours}
+                    onChange={(e) => setDurationHours(e.target.value)}
+                  />
+                  <span className="text-[var(--text-muted)]">h</span>
+                  <input
+                    type="number"
+                    placeholder="m"
+                    className="w-16 px-2 py-1 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-center font-[family-name:var(--font-geist-mono)] focus:border-white focus:outline-none"
+                    value={durationMinutes}
+                    onChange={(e) => setDurationMinutes(e.target.value)}
+                  />
+                  <span className="text-[var(--text-muted)]">m</span>
+                  <Button
+                    size="sm"
+                    onClick={handleSaveDuration}
+                    loading={savingDuration}
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={cancelDurationEdit}
+                    disabled={savingDuration}
+                  >
+                    Cancel
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <span>{duration}</span>
+                  <button
+                    onClick={() => setIsEditingDuration(true)}
+                    className="text-[var(--text-muted)] hover:text-white"
+                    aria-label="Edit duration"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
